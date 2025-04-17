@@ -1,0 +1,98 @@
+{
+  "project_info": {
+    "project_number": "803919627793",
+    "project_id": "phelifla-chat",
+    "storage_bucket": "phelifla-chat.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:803919627793:android:df7de56b49382c0efd13b0",
+        "android_client_info": {
+          "package_name": "com.example.flamengo_chat"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "803919627793-hul6jnehr6o62dhnt750uj5i3caq9bnh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.flamengo_chat",
+            "certificate_hash": "cba249b1df38a562d529c4d5622672eacf7fcac4"
+          }
+        },
+        {
+          "client_id": "803919627793-7rbbevllaet8gorj7cu6uou1qc8cqcer.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAmcJeNi0_yKTuk4TV_HNLF87M3T8QLHdY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "803919627793-7rbbevllaet8gorj7cu6uou1qc8cqcer.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "803919627793-ol5p5mh9ooo0df2eejmk6mfnltimqsom.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.flamengoChat"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:803919627793:android:2ea3c6225070c480fd13b0",
+        "android_client_info": {
+          "package_name": "com.phelipearaujo.PheliFlaChat"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "803919627793-fnjevqossnmlnrk27ch9hlnlsncfv9k5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.phelipearaujo.PheliFlaChat",
+            "certificate_hash": "cba249b1df38a562d529c4d5622672eacf7fcac4"
+          }
+        },
+        {
+          "client_id": "803919627793-7rbbevllaet8gorj7cu6uou1qc8cqcer.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAmcJeNi0_yKTuk4TV_HNLF87M3T8QLHdY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "803919627793-7rbbevllaet8gorj7cu6uou1qc8cqcer.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "803919627793-ol5p5mh9ooo0df2eejmk6mfnltimqsom.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.flamengoChat"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
