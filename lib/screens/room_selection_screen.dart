@@ -1,3 +1,4 @@
+import 'package:flamengo_chat/screens/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'chat_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -16,7 +17,11 @@ class RoomSelectionScreen extends StatelessWidget {
       context,
       MaterialPageRoute(
         builder:
-            (_) => ChatScreen(roomName: roomName, nomeUsuario: nomeUsuario,photoUrl: photoUrl,),
+            (_) => ChatScreen(
+              roomName: roomName,
+              nomeUsuario: nomeUsuario,
+              photoUrl: photoUrl,
+            ),
       ),
     );
   }
@@ -35,7 +40,33 @@ class RoomSelectionScreen extends StatelessWidget {
         title: const Text('Escolha uma Sala'),
         centerTitle: true,
         automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.home),
+            onPressed: () {
+              final user = FirebaseAuth.instance.currentUser;
+              final nomeUsuario = user?.displayName ?? 'Usuário';
+              final photoUrl = user?.photoURL ?? '';
+              //Navigator.pushNamedAndRemoveUntil(
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (_) => HomeScreen(
+                        nomeUsuario: nomeUsuario,
+                        //photoUrl: photoUrl,
+                        isDarkMode: false, // ou pegue do app
+                        onThemeChanged: (_) {},
+                      ),
+                ),
+                //'/home_screen',
+                //(route) => false,
+              );
+            },
+          ),
+        ],
       ),
+
       body: Container(
         decoration: const BoxDecoration(
           image: DecorationImage(
@@ -106,4 +137,3 @@ class RoomSelectionScreen extends StatelessWidget {
     );
   }
 }
-

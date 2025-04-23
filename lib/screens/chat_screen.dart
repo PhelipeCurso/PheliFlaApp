@@ -2,8 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-
-
 class ChatScreen extends StatefulWidget {
   final String roomName;
   final String nomeUsuario;
@@ -89,7 +87,8 @@ class _ChatScreenState extends State<ChatScreen> {
                     reverse: true,
                     itemCount: messages.length,
                     itemBuilder: (ctx, index) {
-                      final msgData = messages[index].data() as Map<String, dynamic>;
+                      final msgData =
+                          messages[index].data() as Map<String, dynamic>;
                       final isMe = msgData['userId'] == currentUser?.uid;
 
                       return Align(

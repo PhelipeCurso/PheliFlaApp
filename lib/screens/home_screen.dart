@@ -14,7 +14,8 @@ class HomeScreen extends StatefulWidget {
     Key? key,
     required this.nomeUsuario,
     required this.isDarkMode,
-    required this.onThemeChanged,
+    required this.onThemeChanged, 
+    //required String photoUrl,
   }) : super(key: key);
 
   @override

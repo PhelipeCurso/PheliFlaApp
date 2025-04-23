@@ -31,7 +31,10 @@ class _LojaScreenState extends State<LojaScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Loja Oficial')),
+      appBar: AppBar(
+        title: const Text('Loja Oficial'),
+        backgroundColor: Colors.red[800],
+      ),
       body: FutureBuilder<List<Product>>(
         future: _produtosFuture,
         builder: (context, snapshot) {
@@ -49,16 +52,52 @@ class _LojaScreenState extends State<LojaScreen> {
             itemCount: produtos.length,
             itemBuilder: (context, index) {
               final item = produtos[index];
+
               return Card(
-                margin: const EdgeInsets.all(12),
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(15),
                 ),
-                child: ListTile(
-                  leading: Image.network(item.imagem, width: 50),
-                  title: Text(item.nome),
-                  trailing: const Icon(Icons.shopping_cart_outlined),
+                elevation: 4,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(15),
                   onTap: () => _abrirLink(item.url),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(15),
+                        ),
+                        child: Image.network(
+                          item.imagem,
+                          height: 180,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                item.nome,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const Icon(Icons.shopping_cart_outlined),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               );
             },

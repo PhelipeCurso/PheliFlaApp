@@ -22,6 +22,8 @@ class FlamengoChatApp extends StatefulWidget {
 
 class _FlamengoChatAppState extends State<FlamengoChatApp> {
   bool isDarkMode = false;
+  
+  
 
   void toggleTheme(bool value) {
     setState(() {
@@ -63,14 +65,16 @@ class _FlamengoChatAppState extends State<FlamengoChatApp> {
           final nomeUsuario =
               ModalRoute.of(context)!.settings.arguments as String;
           return RoomSelectionScreen(); // já usamos os argumentos no widget via ModalRoute
-        }, //'/room-selection': (context) => const RoomSelectionScreen(),
+        }, 
         '/loja': (context) => const LojaScreen(),
         '/home_screen': (context) {
-          final nomeUsuario =
-              ModalRoute.of(context)!.settings.arguments as String;
+          
+          final nomeUsuario =ModalRoute.of(context)!.settings.arguments as String;
+         // final photoUrl = user?.photoURL ?? '';
           return HomeScreen(
             nomeUsuario: nomeUsuario,
             isDarkMode: isDarkMode,
+            //photoUrl: photoUrl,
             onThemeChanged: toggleTheme,
           );
         },
