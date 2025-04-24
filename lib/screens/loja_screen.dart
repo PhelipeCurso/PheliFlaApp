@@ -13,6 +13,20 @@ class LojaScreen extends StatefulWidget {
 class _LojaScreenState extends State<LojaScreen> {
   late Future<List<Product>> _produtosFuture;
 
+  String _categoriaSelecionada = 'Todos';
+  String _generoSelecionado = 'Todos';
+  String _tipoSelecionado = 'Todos';
+
+  final List<String> categorias = [
+    'Todos',
+    'Camisas',
+    'Bonés',
+    'Acessórios',
+    'Canecas',
+  ];
+  final List<String> generos = ['Todos', 'Masculino', 'Feminino', 'Unissex'];
+  final List<String> tipos = ['Todos', 'Infantil', 'Adulto'];
+
   @override
   void initState() {
     super.initState();
@@ -38,11 +52,43 @@ class _LojaScreenState extends State<LojaScreen> {
     ).showSnackBar(SnackBar(content: Text(mensagem)));
   }
 
+  List<Product> _filtrarProdutos(List<Product> produtos) {
+    return produtos.where((p) {
+      final categoriaOk =
+          _categoriaSelecionada == 'Todos' ||
+          p.categoria == _categoriaSelecionada;
+      final generoOk =
+          _generoSelecionado == 'Todos' || p.genero == _generoSelecionado;
+      final tipoOk = _tipoSelecionado == 'Todos' || p.tipo == _tipoSelecionado;
+      return categoriaOk && generoOk && tipoOk;
+    }).toList();
+  }
+
+  Widget _buildDropdown(
+    String label,
+    List<String> items,
+    String value,
+    void Function(String?) onChanged,
+  ) {
+    return DropdownButtonFormField<String>(
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(),
+      ),
+      value: value,
+      items:
+          items
+              .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+              .toList(),
+      onChanged: onChanged,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Loja Oficial'),
+        title: const Text('Loja Oficial PheliFla'),
         backgroundColor: Colors.red[800],
       ),
       body: FutureBuilder<List<Product>>(
@@ -56,79 +102,132 @@ class _LojaScreenState extends State<LojaScreen> {
             return const Center(child: Text('Erro ao carregar produtos.'));
           }
 
-          final produtos = snapshot.data ?? [];
+          final produtos = _filtrarProdutos(snapshot.data ?? []);
 
-          if (produtos.isEmpty) {
-            return const Center(child: Text('Nenhum produto encontrado.'));
-          }
-
-          return ListView.builder(
-            itemCount: produtos.length,
-            itemBuilder: (context, index) {
-              final item = produtos[index];
-
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                elevation: 4,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(15),
-                  onTap: () {
-                    if (item.url.isNotEmpty) {
-                      _abrirLink(item.url);
-                    } else {
-                      _mostrarErro("URL do produto inválida.");
-                    }
-                  },
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (item.imagem.isNotEmpty)
-                        ClipRRect(
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(15),
-                          ),
-                          child: Image.network(
-                            item.imagem,
-                            height: 180,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder:
-                                (context, error, stackTrace) => const SizedBox(
-                                  height: 180,
-                                  child: Center(
-                                    child: Icon(Icons.broken_image),
-                                  ),
-                                ),
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildDropdown(
+                            'Categoria',
+                            categorias,
+                            _categoriaSelecionada,
+                            (value) =>
+                                setState(() => _categoriaSelecionada = value!),
                           ),
                         ),
-                      Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                item.nome,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildDropdown(
+                            'Gênero',
+                            generos,
+                            _generoSelecionado,
+                            (value) =>
+                                setState(() => _generoSelecionado = value!),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    _buildDropdown(
+                      'Tipo',
+                      tipos,
+                      _tipoSelecionado,
+                      (value) => setState(() => _tipoSelecionado = value!),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child:
+                    produtos.isEmpty
+                        ? const Center(
+                          child: Text('Nenhum produto encontrado.'),
+                        )
+                        : ListView.builder(
+                          itemCount: produtos.length,
+                          itemBuilder: (context, index) {
+                            final item = produtos[index];
+                            return Card(
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
                               ),
-                            ),
-                            const Icon(Icons.shopping_cart_outlined),
-                          ],
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                              elevation: 4,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(15),
+                                onTap:
+                                    () =>
+                                        item.url.isNotEmpty
+                                            ? _abrirLink(item.url)
+                                            : _mostrarErro(
+                                              "URL do produto inválida.",
+                                            ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (item.imagem.isNotEmpty)
+                                      ClipRRect(
+                                        borderRadius:
+                                            const BorderRadius.vertical(
+                                              top: Radius.circular(15),
+                                            ),
+                                        child: Image.network(
+                                          item.imagem,
+                                          height: 180,
+                                          width: double.infinity,
+                                          fit: BoxFit.cover,
+                                          errorBuilder:
+                                              (context, error, stackTrace) =>
+                                                  const SizedBox(
+                                                    height: 180,
+                                                    child: Center(
+                                                      child: Icon(
+                                                        Icons.broken_image,
+                                                      ),
+                                                    ),
+                                                  ),
+                                        ),
+                                      ),
+                                    Padding(
+                                      padding: const EdgeInsets.all(12),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              item.nome,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16,
+                                              ),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          const Icon(
+                                            Icons.shopping_cart_outlined,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
+              ),
+            ],
           );
         },
       ),

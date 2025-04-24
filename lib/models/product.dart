@@ -1,16 +1,28 @@
 class Product {
   final String nome;
-  final String url;
   final String imagem;
+  final String url;
+  final String categoria;
+  final String genero; // Masculino, Feminino, Unissex
+  final String tipo; // Infantil, Adulto
 
-  Product({required this.nome, required this.url, required this.imagem});
+  Product({
+    required this.nome,
+    required this.imagem,
+    required this.url,
+    required this.categoria,
+    required this.genero,
+    required this.tipo,
+  });
 
-  // No futuro, quando vier da API (JSON), podemos usar:
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
       nome: json['nome'],
-      url: json['url'],
       imagem: json['imagem'],
+      url: json['url'],
+      categoria: json['categoria'] ?? '',
+      genero: json['genero'] ?? '',
+      tipo: json['tipo'] ?? '',
     );
   }
 }
