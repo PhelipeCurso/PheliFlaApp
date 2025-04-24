@@ -19,13 +19,23 @@ class _LojaScreenState extends State<LojaScreen> {
     _produtosFuture = fetchProdutos();
   }
 
-  void _abrirLink(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      throw 'Não foi possível abrir o link: $url';
+  Future<void> _abrirLink(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        _mostrarErro("Não foi possível abrir o link: $url");
+      }
+    } catch (e) {
+      _mostrarErro("Erro ao tentar abrir o link: $e");
     }
+  }
+
+  void _mostrarErro(String mensagem) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(mensagem)));
   }
 
   @override
@@ -48,6 +58,10 @@ class _LojaScreenState extends State<LojaScreen> {
 
           final produtos = snapshot.data ?? [];
 
+          if (produtos.isEmpty) {
+            return const Center(child: Text('Nenhum produto encontrado.'));
+          }
+
           return ListView.builder(
             itemCount: produtos.length,
             itemBuilder: (context, index) {
@@ -61,21 +75,35 @@ class _LojaScreenState extends State<LojaScreen> {
                 elevation: 4,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(15),
-                  onTap: () => _abrirLink(item.url),
+                  onTap: () {
+                    if (item.url.isNotEmpty) {
+                      _abrirLink(item.url);
+                    } else {
+                      _mostrarErro("URL do produto inválida.");
+                    }
+                  },
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ClipRRect(
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(15),
+                      if (item.imagem.isNotEmpty)
+                        ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(15),
+                          ),
+                          child: Image.network(
+                            item.imagem,
+                            height: 180,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder:
+                                (context, error, stackTrace) => const SizedBox(
+                                  height: 180,
+                                  child: Center(
+                                    child: Icon(Icons.broken_image),
+                                  ),
+                                ),
+                          ),
                         ),
-                        child: Image.network(
-                          item.imagem,
-                          height: 180,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
                       Padding(
                         padding: const EdgeInsets.all(12),
                         child: Row(
