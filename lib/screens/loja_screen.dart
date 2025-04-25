@@ -23,6 +23,9 @@ class _LojaScreenState extends State<LojaScreen> {
     'Bonés',
     'Acessórios',
     'Canecas',
+    'Cropped',
+    'Body',
+    'kit',
   ];
   final List<String> generos = ['Todos', 'Masculino', 'Feminino', 'Unissex'];
   final List<String> tipos = ['Todos', 'Infantil', 'Adulto'];
