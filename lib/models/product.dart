@@ -5,6 +5,7 @@ class Product {
   final String categoria;
   final String genero; // Masculino, Feminino, Unissex
   final String tipo; // Infantil, Adulto
+  final String tag;
 
   Product({
     required this.nome,
@@ -13,6 +14,7 @@ class Product {
     required this.categoria,
     required this.genero,
     required this.tipo,
+    this.tag='',
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -23,6 +25,7 @@ class Product {
       categoria: json['categoria'] ?? '',
       genero: json['genero'] ?? '',
       tipo: json['tipo'] ?? '',
+      tag: json['promocao'] ?? '',
     );
   }
 }

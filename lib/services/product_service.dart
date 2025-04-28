@@ -16,6 +16,7 @@ Future<List<Product>> fetchProdutos() async {
         categoria: data['categoria'] ?? 'Outros',
         genero: data['genero'] ?? 'Unissex',
         tipo: data['tipo'] ?? 'Adulto',
+        tag: data['promocao'] ?? '',
       );
     }).toList();
   } catch (e) {

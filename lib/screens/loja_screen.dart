@@ -152,15 +152,20 @@ class _LojaScreenState extends State<LojaScreen> {
                         ? const Center(
                           child: Text('Nenhum produto encontrado.'),
                         )
-                        : ListView.builder(
+                        : GridView.builder(
+                          padding: const EdgeInsets.all(12),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2, // 2 produtos por linha
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                                childAspectRatio:
+                                    0.65, // controla altura x largura
+                              ),
                           itemCount: produtos.length,
                           itemBuilder: (context, index) {
                             final item = produtos[index];
                             return Card(
-                              margin: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(15),
                               ),
@@ -185,13 +190,13 @@ class _LojaScreenState extends State<LojaScreen> {
                                             ),
                                         child: Image.network(
                                           item.imagem,
-                                          height: 180,
+                                          height: 200,
                                           width: double.infinity,
                                           fit: BoxFit.cover,
                                           errorBuilder:
                                               (context, error, stackTrace) =>
                                                   const SizedBox(
-                                                    height: 180,
+                                                    height: 130,
                                                     child: Center(
                                                       child: Icon(
                                                         Icons.broken_image,
@@ -201,28 +206,56 @@ class _LojaScreenState extends State<LojaScreen> {
                                         ),
                                       ),
                                     Padding(
-                                      padding: const EdgeInsets.all(12),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
-                                          Expanded(
-                                            child: Text(
-                                              item.nome,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16,
-                                              ),
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
+                                          Text(
+                                            item.nome,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
                                             ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
+                                          const SizedBox(height: 4),
                                           const Icon(
                                             Icons.shopping_cart_outlined,
+                                            size: 20,
                                           ),
                                         ],
                                       ),
                                     ),
+                                    if (item.tag.isNotEmpty)
+                                      Positioned(
+                                        top: 8,
+                                        left: 8,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color:
+                                                item.tag == 'Promoção'
+                                                    ? Colors.green
+                                                    : Colors.blue,
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            item.tag,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
                                   ],
                                 ),
                               ),
