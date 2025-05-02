@@ -1,9 +1,10 @@
-import 'package:flamengo_chat/config_screenTheme.dart';
+import 'package:pheli_fla_app/config_screenTheme.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' as parser;
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class HomeScreen extends StatefulWidget {
   final String nomeUsuario;
@@ -90,7 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('PheliFla Notícias'),
+        title: Text(AppLocalizations.of(context)!.newsTitle),
         backgroundColor: Colors.red[800],
       ),
       drawer: Drawer(
@@ -120,12 +121,12 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.home),
-              title: const Text('Home'),
+              title: Text(AppLocalizations.of(context)!.home),
               onTap: () => Navigator.pop(context),
             ),
             ListTile(
               leading: const Icon(Icons.chat),
-              title: const Text('Bate-Papo'),
+              title: Text(AppLocalizations.of(context)!.chat),
               onTap: () {
                 Navigator.pushNamed(
                   context,
@@ -136,7 +137,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.settings),
-              title: const Text('Configurações'),
+              title: Text(AppLocalizations.of(context)!.settings),
               onTap: () {
                 Navigator.push(
                   context,
@@ -152,14 +153,14 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.shopping_cart),
-              title: const Text('Loja'),
+              title: Text(AppLocalizations.of(context)!.store),
               onTap: () {
                 Navigator.pushNamed(context, '/loja');
               },
             ),
             ListTile(
               leading: const Icon(Icons.logout),
-              title: const Text('Sair'),
+              title: Text(AppLocalizations.of(context)!.logout),
               onTap: () => _logout(context),
             ),
           ],
@@ -168,10 +169,10 @@ class _HomeScreenState extends State<HomeScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text(
-            'Últimas Notícias do Mengão:',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
+          Text(
+  AppLocalizations.of(context)!.latestNews,
+  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+),
           const SizedBox(height: 16),
           ...noticias.map(
             (noticia) => _noticiaItem(

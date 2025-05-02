@@ -1,4 +1,4 @@
-import 'package:flamengo_chat/screens/home_screen.dart';
+import 'package:pheli_fla_app/screens/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'chat_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';

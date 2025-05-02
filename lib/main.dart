@@ -6,6 +6,10 @@ import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/room_selection_screen.dart';
 import 'screens/loja_screen.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
+import 'package:pheli_fla_app/locale_provider.dart'; // Ajuste conforme o caminho do seu arquivo
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,8 +26,6 @@ class FlamengoChatApp extends StatefulWidget {
 
 class _FlamengoChatAppState extends State<FlamengoChatApp> {
   bool isDarkMode = false;
-  
-  
 
   void toggleTheme(bool value) {
     setState(() {
@@ -33,52 +35,65 @@ class _FlamengoChatAppState extends State<FlamengoChatApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flamengo Chat',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        fontFamily: 'Raleway',
-        primaryColor: Colors.red[900],
-        scaffoldBackgroundColor: Colors.white,
-        appBarTheme: AppBarTheme(
-          backgroundColor: Colors.red[900],
-          foregroundColor: Colors.white,
-        ),
-        brightness: Brightness.light,
-      ),
-      darkTheme: ThemeData(
-        fontFamily: 'Raleway',
-        brightness: Brightness.dark,
-        primaryColor: Colors.red[900],
-        scaffoldBackgroundColor: Colors.black,
-        appBarTheme: AppBarTheme(
-          backgroundColor: Colors.red[900],
-          foregroundColor: Colors.white,
-        ),
-      ),
-      themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
-      initialRoute: '/login',
-      routes: {
-        '/login': (context) => const LoginScreen(),
-        '/register': (context) => const RegisterScreen(),
-        '/room-selection': (context) {
-          final nomeUsuario =
-              ModalRoute.of(context)!.settings.arguments as String;
-          return RoomSelectionScreen(); // já usamos os argumentos no widget via ModalRoute
-        }, 
-        '/loja': (context) => const LojaScreen(),
-        '/home_screen': (context) {
-          
-          final nomeUsuario =ModalRoute.of(context)!.settings.arguments as String;
-         // final photoUrl = user?.photoURL ?? '';
-          return HomeScreen(
-            nomeUsuario: nomeUsuario,
-            isDarkMode: isDarkMode,
-            //photoUrl: photoUrl,
-            onThemeChanged: toggleTheme,
+    return ChangeNotifierProvider(
+      create: (_) => LocaleProvider(),
+      child: Consumer<LocaleProvider>(
+        builder: (context, localeProvider, child) {
+          return MaterialApp(
+            locale: localeProvider.locale,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            title: 'Flamengo Chat',
+            debugShowCheckedModeBanner: false,
+            theme: ThemeData(
+              fontFamily: 'Raleway',
+              primaryColor: Colors.red[900],
+              scaffoldBackgroundColor: Colors.white,
+              appBarTheme: AppBarTheme(
+                backgroundColor: Colors.red[900],
+                foregroundColor: Colors.white,
+              ),
+              brightness: Brightness.light,
+            ),
+            darkTheme: ThemeData(
+              fontFamily: 'Raleway',
+              brightness: Brightness.dark,
+              primaryColor: Colors.red[900],
+              scaffoldBackgroundColor: Colors.black,
+              appBarTheme: AppBarTheme(
+                backgroundColor: Colors.red[900],
+                foregroundColor: Colors.white,
+              ),
+            ),
+            themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
+            initialRoute: '/login',
+            routes: {
+              '/login': (context) => const LoginScreen(),
+              '/register': (context) => const RegisterScreen(),
+              '/room-selection': (context) {
+                final nomeUsuario =
+                    ModalRoute.of(context)!.settings.arguments as String;
+                return RoomSelectionScreen();
+              },
+              '/loja': (context) => const LojaScreen(),
+              '/home_screen': (context) {
+                final nomeUsuario =
+                    ModalRoute.of(context)!.settings.arguments as String;
+                return HomeScreen(
+                  nomeUsuario: nomeUsuario,
+                  isDarkMode: isDarkMode,
+                  onThemeChanged: toggleTheme,
+                );
+              },
+            },
           );
         },
-      },
+      ),
     );
   }
 }

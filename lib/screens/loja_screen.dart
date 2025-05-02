@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/product.dart';
 import '../services/product_service.dart';
@@ -29,6 +30,8 @@ class _LojaScreenState extends State<LojaScreen> {
   ];
   final List<String> generos = ['Todos', 'Masculino', 'Feminino', 'Unissex'];
   final List<String> tipos = ['Todos', 'Infantil', 'Adulto'];
+  //final precoController = TextEditingController();
+  //final precoPromocionalController = TextEditingController();
 
   @override
   void initState() {
@@ -42,10 +45,10 @@ class _LojaScreenState extends State<LojaScreen> {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
-        _mostrarErro("Não foi possível abrir o link: $url");
+        _mostrarErro(AppLocalizations.of(context)!.openLinkFail(url));
       }
     } catch (e) {
-      _mostrarErro("Erro ao tentar abrir o link: $e");
+      _mostrarErro(AppLocalizations.of(context)!.openLinkError(e.toString()));
     }
   }
 
@@ -76,7 +79,7 @@ class _LojaScreenState extends State<LojaScreen> {
     return DropdownButtonFormField<String>(
       decoration: InputDecoration(
         labelText: label,
-        border: OutlineInputBorder(),
+        border: const OutlineInputBorder(),
       ),
       value: value,
       items:
@@ -89,9 +92,11 @@ class _LojaScreenState extends State<LojaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final local = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Loja Oficial PheliFla'),
+        title: Text(local.storeTitle),
         backgroundColor: Colors.red[800],
       ),
       body: FutureBuilder<List<Product>>(
@@ -117,7 +122,7 @@ class _LojaScreenState extends State<LojaScreen> {
                       children: [
                         Expanded(
                           child: _buildDropdown(
-                            'Categoria',
+                            local.category,
                             categorias,
                             _categoriaSelecionada,
                             (value) =>
@@ -127,7 +132,7 @@ class _LojaScreenState extends State<LojaScreen> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: _buildDropdown(
-                            'Gênero',
+                            local.gender,
                             generos,
                             _generoSelecionado,
                             (value) =>
@@ -138,7 +143,7 @@ class _LojaScreenState extends State<LojaScreen> {
                     ),
                     const SizedBox(height: 8),
                     _buildDropdown(
-                      'Tipo',
+                      local.type,
                       tipos,
                       _tipoSelecionado,
                       (value) => setState(() => _tipoSelecionado = value!),
@@ -149,18 +154,15 @@ class _LojaScreenState extends State<LojaScreen> {
               Expanded(
                 child:
                     produtos.isEmpty
-                        ? const Center(
-                          child: Text('Nenhum produto encontrado.'),
-                        )
+                        ? Center(child: Text(local.noProducts))
                         : GridView.builder(
                           padding: const EdgeInsets.all(12),
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2, // 2 produtos por linha
+                                crossAxisCount: 2,
                                 crossAxisSpacing: 12,
                                 mainAxisSpacing: 12,
-                                childAspectRatio:
-                                    0.65, // controla altura x largura
+                                childAspectRatio: 0.65,
                               ),
                           itemCount: produtos.length,
                           itemBuilder: (context, index) {
@@ -176,35 +178,65 @@ class _LojaScreenState extends State<LojaScreen> {
                                     () =>
                                         item.url.isNotEmpty
                                             ? _abrirLink(item.url)
-                                            : _mostrarErro(
-                                              "URL do produto inválida.",
-                                            ),
+                                            : _mostrarErro(local.invalidUrl),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    if (item.imagem.isNotEmpty)
-                                      ClipRRect(
-                                        borderRadius:
-                                            const BorderRadius.vertical(
-                                              top: Radius.circular(15),
-                                            ),
-                                        child: Image.network(
-                                          item.imagem,
-                                          height: 200,
-                                          width: double.infinity,
-                                          fit: BoxFit.cover,
-                                          errorBuilder:
-                                              (context, error, stackTrace) =>
-                                                  const SizedBox(
-                                                    height: 130,
-                                                    child: Center(
-                                                      child: Icon(
-                                                        Icons.broken_image,
+                                    Stack(
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius:
+                                              const BorderRadius.vertical(
+                                                top: Radius.circular(15),
+                                              ),
+                                          child: Image.network(
+                                            item.imagem,
+                                            height: 190,
+                                            width: double.infinity,
+                                            fit: BoxFit.cover,
+                                            errorBuilder:
+                                                (context, error, stackTrace) =>
+                                                    const SizedBox(
+                                                      height: 130,
+                                                      child: Center(
+                                                        child: Icon(
+                                                          Icons.broken_image,
+                                                        ),
                                                       ),
                                                     ),
-                                                  ),
+                                          ),
                                         ),
-                                      ),
+                                        if (item.tag.isNotEmpty)
+                                          Positioned(
+                                            top: 8,
+                                            left: 8,
+                                            child: Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 4,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color:
+                                                    item.tag == 'Promoção'
+                                                        ? Colors.green
+                                                        : Colors.blue,
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                              child: Text(
+                                                item.tag,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+
                                     Padding(
                                       padding: const EdgeInsets.all(8.0),
                                       child: Column(
@@ -221,41 +253,51 @@ class _LojaScreenState extends State<LojaScreen> {
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                           const SizedBox(height: 4),
+                                          if ((item.precoPromocional ?? 0) >
+                                                  0 &&
+                                              (item.precoPromocional ?? 0) <
+                                                  (item.preco ?? 0))
+                                            Row(
+                                              children: [
+                                                Text(
+                                                  'R\$ ${(item.preco ?? 0).toStringAsFixed(2)}',
+                                                  style: const TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.grey,
+                                                    decoration:
+                                                        TextDecoration
+                                                            .lineThrough,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  'R\$ ${(item.precoPromocional ?? 0).toStringAsFixed(2)}',
+                                                  style: const TextStyle(
+                                                    fontSize: 14,
+                                                    color: Colors.green,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ],
+                                            )
+                                          else
+                                            Text(
+                                              'R\$ ${(item.preco ?? 0).toStringAsFixed(2)}',
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                color: Colors.black,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+
+                                          const SizedBox(height: 4),
                                           const Icon(
                                             Icons.shopping_cart_outlined,
                                             size: 20,
                                           ),
                                         ],
                                       ),
-                                    ),
-                                    if (item.tag.isNotEmpty)
-                                      Positioned(
-                                        top: 8,
-                                        left: 8,
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color:
-                                                item.tag == 'Promoção'
-                                                    ? Colors.green
-                                                    : Colors.blue,
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            item.tag,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
+                                    ),                                  
                                   ],
                                 ),
                               ),

@@ -17,6 +17,14 @@ Future<List<Product>> fetchProdutos() async {
         genero: data['genero'] ?? 'Unissex',
         tipo: data['tipo'] ?? 'Adulto',
         tag: data['promocao'] ?? '',
+        preco:
+            data['preco'] is String
+                ? double.tryParse(data['preco']) ?? 0.0
+                : (data['preco'] as num?)?.toDouble() ?? 0.0,
+        precoPromocional:
+            data['precoPromocao'] is String
+                ? double.tryParse(data['precoPromocao']) ?? 0.0
+                : (data['precoPromocao'] as num?)?.toDouble() ?? 0.0,
       );
     }).toList();
   } catch (e) {

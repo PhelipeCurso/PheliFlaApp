@@ -3,9 +3,11 @@ class Product {
   final String imagem;
   final String url;
   final String categoria;
-  final String genero; // Masculino, Feminino, Unissex
-  final String tipo; // Infantil, Adulto
+  final String genero;
+  final String tipo;
   final String tag;
+  final double? preco;
+  final double? precoPromocional;
 
   Product({
     required this.nome,
@@ -14,7 +16,9 @@ class Product {
     required this.categoria,
     required this.genero,
     required this.tipo,
-    this.tag='',
+    this.tag = '',
+    this.preco,
+    this.precoPromocional,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -26,6 +30,10 @@ class Product {
       genero: json['genero'] ?? '',
       tipo: json['tipo'] ?? '',
       tag: json['promocao'] ?? '',
+      preco: json['preco'] != null ? double.tryParse(json['preco'].toString()) : null,
+      precoPromocional: json['precoPromocional'] != null
+          ? double.tryParse(json['precoPromocional'].toString())
+          : null,
     );
   }
 }
