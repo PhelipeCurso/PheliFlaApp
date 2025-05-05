@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../services/chat_service.dart'; // ajuste conforme o caminho do seu projeto
+import '../services/chat_service.dart';
 
 class ChatScreen extends StatefulWidget {
   final String roomName;
@@ -25,7 +25,20 @@ class _ChatScreenState extends State<ChatScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  final FocusNode _focusNode = FocusNode();
   String? nomeDaSala;
+  String selectedBackground = 'assets/images/fundos/PheliFlafundo.png';
+
+  List<String> backgroundImages = [
+    'assets/images/fundos/PheliFlafundo.png',
+    'assets/images/fundos/ArrascaetaFundo.png',
+    'assets/images/fundos/fundoAdidas.png',
+    'assets/images/fundos/fundo2019.png',
+    'assets/images/fundos/FundoBH.png',
+    'assets/images/fundos/fundoerik.png',
+    'assets/images/fundos/Pedro.png',
+    'assets/images/fundos/UrubuFundo.png',
+  ];
 
   @override
   void initState() {
@@ -60,10 +73,38 @@ class _ChatScreenState extends State<ChatScreen> {
     _messageController.clear();
   }
 
+  void _selecionarFundo() {
+    showModalBottomSheet(
+      context: context,
+      builder:
+          (_) => GridView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: backgroundImages.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+            ),
+            itemBuilder: (_, index) {
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    selectedBackground = backgroundImages[index];
+                  });
+                  Navigator.pop(context);
+                },
+                child: Image.asset(backgroundImages[index], fit: BoxFit.cover),
+              );
+            },
+          ),
+    );
+  }
+
   @override
   void dispose() {
     _chatService.removerUsuarioOnline(widget.roomName);
     _messageController.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -79,7 +120,6 @@ class _ChatScreenState extends State<ChatScreen> {
               child: Text(
                 nomeDaSala ?? 'Carregando...',
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 18),
               ),
             ),
             StreamBuilder<QuerySnapshot>(
@@ -91,17 +131,17 @@ class _ChatScreenState extends State<ChatScreen> {
                       .snapshots(),
               builder: (context, snapshot) {
                 final onlineCount = snapshot.data?.docs.length ?? 0;
-                return Text(
-                  ' ($onlineCount online)',
-                  style: const TextStyle(fontSize: 16),
-                );
+                return Text(' ($onlineCount online)');
               },
             ),
           ],
         ),
-
         backgroundColor: Colors.red[900],
         actions: [
+          IconButton(
+            icon: const Icon(Icons.image),
+            onPressed: _selecionarFundo,
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
@@ -116,17 +156,16 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ],
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.black, Colors.red],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: Column(
-          children: [
-            Expanded(
+      body: Column(
+        children: [
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                image: DecorationImage(
+                  image: AssetImage(selectedBackground),
+                  fit: BoxFit.cover,
+                ),
+              ),
               child: StreamBuilder<QuerySnapshot>(
                 stream:
                     _firestore
@@ -154,11 +193,11 @@ class _ChatScreenState extends State<ChatScreen> {
                         alignment:
                             isMe ? Alignment.centerRight : Alignment.centerLeft,
                         child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisAlignment:
                               isMe
                                   ? MainAxisAlignment.end
                                   : MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             if (!isMe)
                               Padding(
@@ -259,43 +298,43 @@ class _ChatScreenState extends State<ChatScreen> {
                 },
               ),
             ),
-            const Divider(height: 1),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              color: Colors.grey[100],
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _messageController,
-                      decoration: InputDecoration(
-                        hintText: 'Digite sua mensagem...',
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(20),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
-                        ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            color: Colors.grey[100],
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _messageController,
+                    focusNode: _focusNode,
+                    decoration: InputDecoration(
+                      hintText: 'Digite sua mensagem...',
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  CircleAvatar(
-                    backgroundColor: Colors.red[900],
-                    child: IconButton(
-                      icon: const Icon(Icons.send, color: Colors.white),
-                      onPressed: _sendMessage,
-                    ),
+                ),
+                const SizedBox(width: 8),
+                CircleAvatar(
+                  backgroundColor: Colors.red[900],
+                  child: IconButton(
+                    icon: const Icon(Icons.send, color: Colors.white),
+                    onPressed: _sendMessage,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -11,6 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
 
+  
   cloud_firestore: ^4.13.0
   firebase_core: ^2.25.4
   firebase_auth: ^4.17.4
@@ -47,6 +48,14 @@ flutter:
     - assets/images/PheliFlafundo.png
     - assets/images/cadastrouser.png
     - assets/images/Gaming.png
+    - assets/images/fundos/PheliFlafundo.png
+    - assets/images/fundos/ArrascaetaFundo.png
+    - assets/images/fundos/fundoAdidas.png
+    - assets/images/fundos/fundo2019.png
+    - assets/images/fundos/FundoBH.png
+    - assets/images/fundos/fundoerik.png
+    - assets/images/fundos/Pedro.png
+    - assets/images/fundos/UrubuFundo.png
 
   fonts:
     - family: Raleway
