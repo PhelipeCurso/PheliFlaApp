@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../services/chat_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ChatScreen extends StatefulWidget {
   final String roomName;
@@ -43,6 +44,8 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
+   _loadSavedBackground();
+
     _chatService.criarSalaSeNaoExistir(widget.roomName).then((_) {
       _chatService.adicionarUsuarioOnline(
         widget.roomName,
@@ -51,6 +54,16 @@ class _ChatScreenState extends State<ChatScreen> {
       );
       _carregarNomeSala();
     });
+  }
+
+  void _loadSavedBackground() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedBg = prefs.getString('chatBackground');
+    if (savedBg != null && backgroundImages.contains(savedBg)) {
+      setState(() {
+        selectedBackground = savedBg;
+      });
+    }
   }
 
   void _carregarNomeSala() async {
@@ -87,7 +100,12 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             itemBuilder: (_, index) {
               return GestureDetector(
-                onTap: () {
+                onTap: () async {
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.setString(
+                    'chatBackground',
+                    backgroundImages[index],
+                  );
                   setState(() {
                     selectedBackground = backgroundImages[index];
                   });

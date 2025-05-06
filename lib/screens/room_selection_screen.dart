@@ -44,7 +44,9 @@ class RoomSelectionScreen extends StatelessWidget {
     } else {
       // adiciona usuário à lista
       usuarios.add(uid);
-      await salaRef.update({'usuarios': usuarios});
+      await salaRef.update({
+        'usuarios': FieldValue.arrayUnion([uid]),
+      });
     }
     final nomeSala = data['nome'] ?? roomId;
 

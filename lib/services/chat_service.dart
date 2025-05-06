@@ -32,28 +32,38 @@ class ChatService {
   ) async {
     final user = _auth.currentUser;
     if (user != null) {
+      final uid = user.uid;
       await _firestore
           .collection('chats')
           .doc(roomName)
           .collection('usersOnline')
-          .doc(user.uid)
+          .doc(uid)
           .set({
             'nome': user.displayName ?? nomeUsuario,
             'photoUrl': photoUrl,
             'lastSeen': FieldValue.serverTimestamp(),
           });
+      // Adiciona no array "usuarios" da sala
+      await _firestore.collection('salas').doc(roomName).update({
+        'usuarios': FieldValue.arrayUnion([uid]),
+      });
     }
   }
 
   Future<void> removerUsuarioOnline(String roomName) async {
     final user = _auth.currentUser;
     if (user != null) {
+      final uid = user.uid;
       await _firestore
           .collection('chats')
           .doc(roomName)
           .collection('usersOnline')
-          .doc(user.uid)
+          .doc(uid)
           .delete();
+      // Remove do array "usuarios" na sala
+      await _firestore.collection('salas').doc(roomName).update({
+        'usuarios': FieldValue.arrayRemove([uid]),
+      });
     }
   }
 
