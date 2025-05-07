@@ -5,6 +5,9 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' as parser;
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'ge_news.dart';
+import 'coluna_do_fla.dart';
+import 'PheliFla_youtube.dart';
 
 class HomeScreen extends StatefulWidget {
   final String nomeUsuario;
@@ -15,8 +18,7 @@ class HomeScreen extends StatefulWidget {
     Key? key,
     required this.nomeUsuario,
     required this.isDarkMode,
-    required this.onThemeChanged, 
-    //required String photoUrl,
+    required this.onThemeChanged,
   }) : super(key: key);
 
   @override
@@ -25,6 +27,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late bool isDarkMode;
+  int _selectedIndex = 0;
   List<Map<String, String>> noticias = [];
 
   @override
@@ -88,6 +91,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final User? user = FirebaseAuth.instance.currentUser;
     final String? photoURL = user?.photoURL;
+
+    final tabs = [
+      _buildNoticiasGE(), // aba 0
+      const ColunaDoFlaWidget(), // aba 1
+      const PheliFlaYoutube(), // aba 2
+    ];
 
     return Scaffold(
       appBar: AppBar(
@@ -166,23 +175,43 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Text(
-  AppLocalizations.of(context)!.latestNews,
-  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-),
-          const SizedBox(height: 16),
-          ...noticias.map(
-            (noticia) => _noticiaItem(
-              titulo: noticia['titulo']!,
-              imagem: noticia['imagem']!,
-              link: noticia['link']!,
-            ),
+      body: tabs[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: (index) => setState(() => _selectedIndex = index),
+        selectedItemColor: Colors.red[800],
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.article), label: 'GE'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.chrome_reader_mode),
+            label: 'Coluna',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.video_collection),
+            label: 'YouTube',
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildNoticiasGE() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Text(
+          AppLocalizations.of(context)!.latestNews,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 16),
+        ...noticias.map(
+          (noticia) => _noticiaItem(
+            titulo: noticia['titulo']!,
+            imagem: noticia['imagem']!,
+            link: noticia['link']!,
+          ),
+        ),
+      ],
     );
   }
 
