@@ -10,6 +10,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:pheli_fla_app/locale_provider.dart'; // Ajuste conforme o caminho do seu arquivo
+import 'pages/noticias_page_coluna.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

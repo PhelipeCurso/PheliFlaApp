@@ -1,13 +1,16 @@
-import 'package:pheli_fla_app/config_screenTheme.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:http/http.dart' as http;
-import 'package:html/parser.dart' as parser;
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:http/http.dart' as http;
+import 'package:html/parser.dart' as htmlParser;
+import 'package:xml/xml.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:pheli_fla_app/config_screenTheme.dart';
+import 'package:pheli_fla_app/services/rss_service.dart';
+import 'package:pheli_fla_app/pages/noticias_page_coluna.dart';
 import 'ge_news.dart';
-import 'coluna_do_fla.dart';
 import 'PheliFla_youtube.dart';
+import 'package:pheli_fla_app/widgets/news_card.dart';
 
 class HomeScreen extends StatefulWidget {
   final String nomeUsuario;
@@ -28,13 +31,15 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late bool isDarkMode;
   int _selectedIndex = 0;
-  List<Map<String, String>> noticias = [];
+  late Future<List<Map<String, String>>> noticiasGE;
+  late Future<List<Map<String, String>>> noticiasColuna;
 
   @override
   void initState() {
     super.initState();
     isDarkMode = widget.isDarkMode;
-    _buscarNoticias();
+    noticiasGE = _buscarNoticiasGE();
+    noticiasColuna = fetchColunaFlaRSS();
   }
 
   void toggleTheme(bool value) {
@@ -49,43 +54,67 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
   }
 
-  Future<void> _buscarNoticias() async {
+  Future<List<Map<String, String>>> _buscarNoticiasGE() async {
     try {
       final response = await http.get(
         Uri.parse('https://ge.globo.com/futebol/times/flamengo/'),
       );
-
       if (response.statusCode == 200) {
-        final document = parser.parse(response.body);
+        final document = htmlParser.parse(response.body);
         final elements = document.querySelectorAll('.feed-post-body');
-
-        final novasNoticias =
-            elements.take(10).map((element) {
-              final titulo =
-                  element.querySelector('.feed-post-link')?.text.trim() ??
-                  'Sem título';
-              final link =
-                  element
-                      .querySelector('.feed-post-link')
-                      ?.attributes['href'] ??
-                  '';
-              final img = element.querySelector('img')?.attributes['src'] ?? '';
-
-              return {
-                'titulo': titulo,
-                'link': link.startsWith('http') ? link : 'https:$link',
-                'imagem': img,
-              };
-            }).toList();
-
-        setState(() {
-          noticias = novasNoticias;
-        });
+        return elements.take(10).map((element) {
+          final titulo =
+              element.querySelector('.feed-post-link')?.text.trim() ??
+              'Sem título';
+          final link =
+              element.querySelector('.feed-post-link')?.attributes['href'] ??
+              '';
+          final img = element.querySelector('img')?.attributes['src'] ?? '';
+          return {
+            'titulo': titulo,
+            'link': link.startsWith('http') ? link : 'https:$link',
+            'imagem': img,
+          };
+        }).toList();
+      } else {
+        throw Exception('Falha ao carregar notícias GE');
       }
     } catch (e) {
-      print('Erro ao buscar notícias: $e');
+      print('Erro ao buscar notícias GE: $e');
+      return [];
     }
   }
+
+  /* Future<List<Map<String, String>>> _buscarNoticiasColunaDoFla() async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://colunadofla.com/feed/'),
+      );
+      if (response.statusCode == 200) {
+        final document = XmlDocument.parse(response.body);
+        final items = document.findAllElements('item');
+        return items.map((item) {
+          final titulo = item.getElement('title')?.text ?? 'Sem título';
+          final link = item.getElement('link')?.text ?? '';
+          final descricaoBruta = item.getElement('description')?.text ?? '';
+          final imagem = extrairImagem(descricaoBruta) ?? '';
+          final descricaoSemHtml =
+              htmlParser.parse(descricaoBruta).body?.text ?? '';
+          return {
+            'titulo': titulo,
+            'link': link,
+            'descricao': descricaoSemHtml,
+            'imagem': imagem,
+          };
+        }).toList();
+      } else {
+        throw Exception('Erro ao buscar feed RSS do Coluna do Fla');
+      }
+    } catch (e) {
+      print('Erro ao buscar notícias Coluna do Fla: $e');
+      return [];
+    }
+  }*/
 
   @override
   Widget build(BuildContext context) {
@@ -93,9 +122,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final String? photoURL = user?.photoURL;
 
     final tabs = [
-      _buildNoticiasGE(), // aba 0
-      const ColunaDoFlaWidget(), // aba 1
-      const PheliFlaYoutube(), // aba 2
+      _buildNoticiasGE(),
+      NoticiasPage(noticiascoluna: noticiasColuna),
+      const PheliFlaYoutube(),
     ];
 
     return Scaffold(
@@ -163,9 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ListTile(
               leading: const Icon(Icons.shopping_cart),
               title: Text(AppLocalizations.of(context)!.store),
-              onTap: () {
-                Navigator.pushNamed(context, '/loja');
-              },
+              onTap: () => Navigator.pushNamed(context, '/loja'),
             ),
             ListTile(
               leading: const Icon(Icons.logout),
@@ -196,22 +223,31 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildNoticiasGE() {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Text(
-          AppLocalizations.of(context)!.latestNews,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 16),
-        ...noticias.map(
-          (noticia) => _noticiaItem(
-            titulo: noticia['titulo']!,
-            imagem: noticia['imagem']!,
-            link: noticia['link']!,
-          ),
-        ),
-      ],
+    return FutureBuilder<List<Map<String, String>>>(
+      future: noticiasGE,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Center(
+            child: Text('Erro ao carregar notícias: ${snapshot.error}'),
+          );
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(child: Text('Sem notícias disponíveis.'));
+        } else {
+          return ListView(
+            padding: const EdgeInsets.only(top: 16, bottom: 80),
+            children:
+                snapshot.data!.map((noticia) {
+                  return NewsCard(
+                    titulo: noticia['titulo']!,
+                    imagem: noticia['imagem']!,
+                    link: noticia['link']!,
+                  );
+                }).toList(),
+          );
+        }
+      },
     );
   }
 
@@ -242,16 +278,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: double.infinity,
                 height: 180,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => const SizedBox(),
               ),
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16.0),
               child: Text(
                 titulo,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  fontSize: 17,
+                  fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
               ),

@@ -37,6 +37,28 @@ class _LojaScreenState extends State<LojaScreen> {
   void initState() {
     super.initState();
     _produtosFuture = fetchProdutos();
+
+    // Mostra o aviso assim que a tela é carregada
+    Future.delayed(Duration.zero, _mostrarAviso);
+  }
+
+  void _mostrarAviso() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Atenção'),
+            content: const Text(
+              'Os valores podem variar no momento da compra. Confirme o valor no app de compra.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+    );
   }
 
   Future<void> _abrirLink(String url) async {
@@ -191,13 +213,13 @@ class _LojaScreenState extends State<LojaScreen> {
                                               ),
                                           child: Image.network(
                                             item.imagem,
-                                            height: 190,
+                                            height: 175,
                                             width: double.infinity,
                                             fit: BoxFit.cover,
                                             errorBuilder:
                                                 (context, error, stackTrace) =>
                                                     const SizedBox(
-                                                      height: 130,
+                                                      height: 120,
                                                       child: Center(
                                                         child: Icon(
                                                           Icons.broken_image,
@@ -297,7 +319,7 @@ class _LojaScreenState extends State<LojaScreen> {
                                           ),
                                         ],
                                       ),
-                                    ),                                  
+                                    ),
                                   ],
                                 ),
                               ),
