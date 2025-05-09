@@ -11,6 +11,8 @@ import 'package:pheli_fla_app/pages/noticias_page_coluna.dart';
 import 'ge_news.dart';
 import 'PheliFla_youtube.dart';
 import 'package:pheli_fla_app/widgets/news_card.dart';
+import 'package:pheli_fla_app/pages/agenda_rubro_negra_page.dart';
+
 
 class HomeScreen extends StatefulWidget {
   final String nomeUsuario;
@@ -174,6 +176,23 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
             ListTile(
+              leading: Icon(Icons.sports_soccer),
+              title: Text('Agenda Rubro-Negra'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AgendaRubroNegraPage(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.shopping_cart),
+              title: Text(AppLocalizations.of(context)!.store),
+              onTap: () => Navigator.pushNamed(context, '/loja'),
+            ),
+            ListTile(
               leading: const Icon(Icons.settings),
               title: Text(AppLocalizations.of(context)!.settings),
               onTap: () {
@@ -189,11 +208,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.shopping_cart),
-              title: Text(AppLocalizations.of(context)!.store),
-              onTap: () => Navigator.pushNamed(context, '/loja'),
-            ),
+
             ListTile(
               leading: const Icon(Icons.logout),
               title: Text(AppLocalizations.of(context)!.logout),
