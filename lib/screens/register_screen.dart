@@ -56,11 +56,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       });
 
       // Vai para a seleção de sala com o nome
-      Navigator.pushReplacementNamed(
-        context,
-        '/room-selection',
-        arguments: nome,
-      );
+      Navigator.pushReplacementNamed(context, '/home_screen', arguments: nome);
     } on FirebaseAuthException catch (e) {
       setState(() {
         _errorMessage = e.message ?? 'Erro ao registrar.';

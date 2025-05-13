@@ -5,7 +5,7 @@ class NoticiasPage extends StatelessWidget {
   final Future<List<Map<String, String>>> noticiascoluna;
 
   const NoticiasPage({Key? key, required this.noticiascoluna})
-      : super(key: key);
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {

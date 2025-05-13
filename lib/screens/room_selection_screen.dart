@@ -132,7 +132,10 @@ class RoomSelectionScreen extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 20),
                   child: ElevatedButton(
                     onPressed:
-                        () => _enterChatRoom(context, salaId, nomeUsuario),
+                        usuarios.length >= limite
+                            ? null
+                            : () =>
+                                _enterChatRoom(context, salaId, nomeUsuario),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.black87,
                       minimumSize: const Size(double.infinity, 50),
@@ -201,8 +204,10 @@ class RoomSelectionScreen extends StatelessWidget {
                       child: const Text('Criar'),
                       onPressed: () async {
                         final nome = nomeSalaController.text.trim();
-                        final limite =
+                        int limite =
                             int.tryParse(limiteController.text.trim()) ?? 20;
+                        if (limite < 2) limite = 2;
+                        if (limite > 100) limite = 100;
                         if (nome.isEmpty) return;
 
                         await FirebaseFirestore.instance

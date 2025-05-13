@@ -13,7 +13,6 @@ import 'PheliFla_youtube.dart';
 import 'package:pheli_fla_app/widgets/news_card.dart';
 import 'package:pheli_fla_app/pages/agenda_rubro_negra_page.dart';
 
-
 class HomeScreen extends StatefulWidget {
   final String nomeUsuario;
   final bool isDarkMode;
@@ -131,7 +130,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.newsTitle),
+        title: Text(
+          _selectedIndex == 0
+              ? AppLocalizations.of(context)!.newsGeTitle
+              : _selectedIndex == 1
+              ? AppLocalizations.of(context)!.colunaTitle
+              : AppLocalizations.of(context)!.youtubeTitle,
+        ),
         backgroundColor: Colors.red[800],
       ),
       drawer: Drawer(
@@ -177,13 +182,24 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             ListTile(
               leading: Icon(Icons.sports_soccer),
-              title: Text('Agenda Rubro-Negra'),
+              title: Text(AppLocalizations.of(context)!.agendaTitle),
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => AgendaRubroNegraPage(),
-                  ),
+                Navigator.pop(context); // Fecha o drawer
+                showDialog(
+                  context: context,
+                  builder:
+                      (context) => AlertDialog(
+                        title: const Text('Em desenvolvimento'),
+                        content: const Text(
+                          'Este recurso está em desenvolvimento. Em breve estará disponível!',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Text('OK'),
+                          ),
+                        ],
+                      ),
                 );
               },
             ),
@@ -222,15 +238,18 @@ class _HomeScreenState extends State<HomeScreen> {
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
         selectedItemColor: Colors.red[800],
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.article), label: 'GE'),
+        items: [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.article),
+            label: AppLocalizations.of(context)!.bottomNavGe,
+          ),
           BottomNavigationBarItem(
             icon: Icon(Icons.chrome_reader_mode),
-            label: 'Coluna',
+            label: AppLocalizations.of(context)!.bottomNavColuna,
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.video_collection),
-            label: 'YouTube',
+            label: AppLocalizations.of(context)!.bottomNavYoutube,
           ),
         ],
       ),

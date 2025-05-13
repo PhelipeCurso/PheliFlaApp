@@ -153,8 +153,25 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     TextField(
                       controller: _emailController,
-                      decoration: const InputDecoration(labelText: 'E-mail'),
+                      style: const TextStyle(
+                        color: Color.fromARGB(255, 17, 17, 17),
+                      ), // Cor do texto
+                      decoration: const InputDecoration(
+                        labelText: 'E-mail',
+                        labelStyle: TextStyle(
+                          color: Color.fromARGB(255, 15, 15, 15),
+                        ), // Cor do label
+                        enabledBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Color.fromARGB(255, 19, 18, 18),
+                          ), // Cor da linha
+                        ),
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: Colors.white),
+                        ),
+                      ),
                     ),
+
                     const SizedBox(height: 10),
 
                     TextField(

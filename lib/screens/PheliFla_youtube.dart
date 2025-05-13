@@ -75,10 +75,6 @@ class _PheliFlaYoutubeState extends State<PheliFlaYoutube> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Vídeos do PheliFla'),
-        backgroundColor: Colors.red[800],
-      ),
       body:
           _videos.isEmpty
               ? const Center(child: CircularProgressIndicator())

@@ -1,4 +1,3 @@
-// coluna_do_fla_widget.dart
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' as parser;
@@ -27,17 +26,18 @@ class _ColunaDoFlaWidgetState extends State<ColunaDoFlaWidget> {
         final document = parser.parse(response.body);
         final elements = document.querySelectorAll('.td-module-thumb');
 
-        final novasNoticias = elements.take(10).map((element) {
-          final link = element.querySelector('a')?.attributes['href'] ?? '';
-          final img = element.querySelector('img')?.attributes['src'] ?? '';
-          final titulo = element.querySelector('img')?.attributes['title'] ?? 'Sem título';
+        final novasNoticias =
+            elements.take(10).map((element) {
+              final link = element.querySelector('a')?.attributes['href'] ?? '';
+              final imgElement = element.querySelector('img');
+              final img =
+                  imgElement?.attributes['data-src'] ??
+                  imgElement?.attributes['src'] ??
+                  '';
+              final titulo = imgElement?.attributes['title'] ?? 'Sem título';
 
-          return {
-            'titulo': titulo,
-            'link': link,
-            'imagem': img,
-          };
-        }).toList();
+              return {'titulo': titulo, 'link': link, 'imagem': img};
+            }).toList();
 
         setState(() {
           noticias = novasNoticias;
@@ -50,9 +50,15 @@ class _ColunaDoFlaWidgetState extends State<ColunaDoFlaWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: noticias.map((noticia) => _noticiaItem(noticia)).toList(),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Coluna do Fla'),
+        backgroundColor: Colors.red[800],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: noticias.map((noticia) => _noticiaItem(noticia)).toList(),
+      ),
     );
   }
 
@@ -72,10 +78,21 @@ class _ColunaDoFlaWidgetState extends State<ColunaDoFlaWidget> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (noticia['imagem']!.isNotEmpty)
-              Image.network(noticia['imagem']!, height: 180, width: double.infinity, fit: BoxFit.cover),
+              Image.network(
+                noticia['imagem']!,
+                height: 180,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
             Padding(
               padding: const EdgeInsets.all(12),
-              child: Text(noticia['titulo']!, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+              child: Text(
+                noticia['titulo']!,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
         ),

@@ -25,5 +25,12 @@
   "noProducts": "No products found.",
   "invalidUrl": "Invalid product URL.",
   "openLinkError": "Error trying to open link: {error}",
-  "openLinkFail": "Could not open the link: {url}"
+  "openLinkFail": "Could not open the link: {url}",
+  "agendaTitle": "Red-Black Schedule",
+  "newsGeTitle": "GE News",
+  "colunaTitle": "Coluna do Fla",
+  "youtubeTitle": "PheliFla Videos",
+  "bottomNavGe": "GE",
+  "bottomNavColuna": "Coluna",
+  "bottomNavYoutube": "YouTube"
 }
