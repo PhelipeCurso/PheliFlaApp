@@ -9,12 +9,27 @@ import 'screens/loja_screen.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
-import 'package:pheli_fla_app/locale_provider.dart'; // Ajuste conforme o caminho do seu arquivo
+import 'package:pheli_fla_app/locale_provider.dart';
 import 'pages/noticias_page_coluna.dart';
+
+// Notificações
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'services/service_notifications.dart'; // <-- Certifique-se de criar e importar
+
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  print("Mensagem em segundo plano: ${message.messageId}");
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await FirebaseMessaging.instance.requestPermission();
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  await NotificationService.init(); // Inicializa notificações locais
+
   runApp(const FlamengoChatApp());
 }
 
@@ -27,6 +42,22 @@ class FlamengoChatApp extends StatefulWidget {
 
 class _FlamengoChatAppState extends State<FlamengoChatApp> {
   bool isDarkMode = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Escuta mensagens quando o app está em primeiro plano
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      final notification = message.notification;
+      if (notification != null) {
+        NotificationService.showNotification(
+          notification.title ?? 'Nova Mensagem',
+          notification.body ?? '',
+        );
+      }
+    });
+  }
 
   void toggleTheme(bool value) {
     setState(() {
@@ -76,15 +107,10 @@ class _FlamengoChatAppState extends State<FlamengoChatApp> {
             routes: {
               '/login': (context) => const LoginScreen(),
               '/register': (context) => const RegisterScreen(),
-              '/room-selection': (context) {
-                final nomeUsuario =
-                    ModalRoute.of(context)!.settings.arguments as String;
-                return RoomSelectionScreen();
-              },
+              '/room-selection': (context) => const RoomSelectionScreen(),
               '/loja': (context) => const LojaScreen(),
               '/home_screen': (context) {
-                final nomeUsuario =
-                    ModalRoute.of(context)!.settings.arguments as String;
+                final nomeUsuario = ModalRoute.of(context)!.settings.arguments as String;
                 return HomeScreen(
                   nomeUsuario: nomeUsuario,
                   isDarkMode: isDarkMode,

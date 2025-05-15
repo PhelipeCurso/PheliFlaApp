@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -47,6 +48,15 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       final nomeUsuario = userDoc['nomeUsuario'];
+      // ⬇️ Salva token e preferências
+      await salvarTokenENotificacoes(uid, nomeUsuario);
+
+      // Navega para a próxima tela
+      Navigator.pushReplacementNamed(
+        context,
+        '/room-selection',
+        arguments: nomeUsuario,
+      );
 
       // 3. Vai para a seleção de sala e passa o nome
       Navigator.pushReplacementNamed(
@@ -102,6 +112,10 @@ class _LoginScreenState extends State<LoginScreen> {
           'email': googleUser.email,
         });
       }
+      await salvarTokenENotificacoes(
+        uid,
+        googleUser.displayName ?? 'Usuário Google',
+      );
 
       Navigator.pushReplacementNamed(
         context,
@@ -113,6 +127,16 @@ class _LoginScreenState extends State<LoginScreen> {
     } finally {
       setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> salvarTokenENotificacoes(String uid, String nomeUsuario) async {
+    final token = await FirebaseMessaging.instance.getToken();
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    await FirebaseFirestore.instance.collection('usuarios').doc(uid).set({
+      'fcmToken': token,
+      'notificacoesAtivadas': true, // Ativa por padrão
+      'nomeUsuario': nomeUsuario,
+    }, SetOptions(merge: true));
   }
 
   @override

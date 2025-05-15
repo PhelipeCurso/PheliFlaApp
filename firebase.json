@@ -1,1 +1,36 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"phelifla-chat","appId":"1:803919627793:android:df7de56b49382c0efd13b0","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"phelifla-chat","configurations":{"android":"1:803919627793:android:df7de56b49382c0efd13b0","ios":"1:803919627793:ios:73f187ef45f07165fd13b0","web":"1:803919627793:web:50d318972cccc436fd13b0"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "phelifla-chat",
+          "appId": "1:803919627793:android:df7de56b49382c0efd13b0",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "phelifla-chat",
+          "configurations": {
+            "android": "1:803919627793:android:df7de56b49382c0efd13b0",
+            "ios": "1:803919627793:ios:73f187ef45f07165fd13b0",
+            "web": "1:803919627793:web:50d318972cccc436fd13b0"
+          }
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ]
+    }
+  ]
+}

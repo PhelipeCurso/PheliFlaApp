@@ -4,6 +4,8 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import '../locale_provider.dart'; // Ajuste o caminho conforme seu projeto
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SettingsScreen extends StatefulWidget {
   final bool isDarkMode;
@@ -26,11 +28,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _senhaController = TextEditingController();
   String _idiomaSelecionado = 'pt';
   bool _dadosCarregados = false;
+  bool notificacoesAtivadas = true;
 
   @override
   void initState() {
     super.initState();
     _loadAppVersion();
+    carregarPreferencia();
+  }
+
+  void carregarPreferencia() async {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final doc =
+        await FirebaseFirestore.instance.collection('usuarios').doc(uid).get();
+    setState(() {
+      notificacoesAtivadas = doc.data()?['notificacoesAtivadas'] ?? true;
+    });
+  }
+
+  void atualizarPreferencia(bool valor) async {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    await FirebaseFirestore.instance.collection('usuarios').doc(uid).update({
+      'notificacoesAtivadas': valor,
+    });
+    setState(() {
+      notificacoesAtivadas = valor;
+    });
   }
 
   @override
@@ -57,11 +80,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       await _auth.currentUser!.updateDisplayName(_nomeController.text.trim());
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.nameUpdatedSuccess)),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.nameUpdatedSuccess),
+        ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${AppLocalizations.of(context)!.nameUpdateError}: $e')),
+        SnackBar(
+          content: Text('${AppLocalizations.of(context)!.nameUpdateError}: $e'),
+        ),
       );
     }
   }
@@ -70,20 +97,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       await _auth.currentUser!.updatePassword(_senhaController.text.trim());
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.passwordUpdatedSuccess)),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.passwordUpdatedSuccess),
+        ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${AppLocalizations.of(context)!.passwordUpdateError}: $e')),
+        SnackBar(
+          content: Text(
+            '${AppLocalizations.of(context)!.passwordUpdateError}: $e',
+          ),
+        ),
       );
     }
   }
 
-void _mudarIdioma(String? idioma) {
-  if (idioma == null) return;
-  final provider = Provider.of<LocaleProvider>(context, listen: false);
-  provider.setLocale(Locale(idioma));
-}
+  void _mudarIdioma(String? idioma) {
+    if (idioma == null) return;
+    final provider = Provider.of<LocaleProvider>(context, listen: false);
+    provider.setLocale(Locale(idioma));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -99,15 +132,19 @@ void _mudarIdioma(String? idioma) {
             value: widget.isDarkMode,
             onChanged: widget.onThemeChanged,
           ),
+          SwitchListTile(
+            title: Text("Notificações de novas mensagens"),
+            value: notificacoesAtivadas,
+            onChanged: (valor) {
+              atualizarPreferencia(valor);
+            },
+          ),
           const Divider(),
           TextField(
             controller: _nomeController,
             decoration: InputDecoration(labelText: s.username),
           ),
-          ElevatedButton(
-            onPressed: _atualizarNome,
-            child: Text(s.updateName),
-          ),
+          ElevatedButton(onPressed: _atualizarNome, child: Text(s.updateName)),
           const SizedBox(height: 16),
           TextField(
             controller: _senhaController,
