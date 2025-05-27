@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Product {
   final String nome;
   final String imagem;
@@ -8,6 +10,8 @@ class Product {
   final String tag;
   final double? preco;
   final double? precoPromocional;
+  final String? loja;
+  final String codigoLoja;
 
   Product({
     required this.nome,
@@ -19,21 +23,29 @@ class Product {
     this.tag = '',
     this.preco,
     this.precoPromocional,
+    this.loja,
+    required this.codigoLoja,
   });
-
-  factory Product.fromJson(Map<String, dynamic> json) {
+  factory Product.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
     return Product(
-      nome: json['nome'],
-      imagem: json['imagem'],
-      url: json['url'],
-      categoria: json['categoria'] ?? '',
-      genero: json['genero'] ?? '',
-      tipo: json['tipo'] ?? '',
-      tag: json['promocao'] ?? '',
-      preco: json['preco'] != null ? double.tryParse(json['preco'].toString()) : null,
-      precoPromocional: json['precoPromocional'] != null
-          ? double.tryParse(json['precoPromocional'].toString())
-          : null,
+      nome: data['nome'] ?? '',
+      url: data['url'] ?? '',
+      imagem: data['imagem'] ?? '',
+      categoria: data['categoria'] ?? 'Outros',
+      genero: data['genero'] ?? 'Unissex',
+      tipo: data['tipo'] ?? 'Adulto',
+      tag: data['promocao'] ?? '',
+      preco:
+          data['preco'] is String
+              ? double.tryParse(data['preco']) ?? 0.0
+              : (data['preco'] as num?)?.toDouble() ?? 0.0,
+      precoPromocional:
+          data['precoPromocao'] is String
+              ? double.tryParse(data['precoPromocao']) ?? 0.0
+              : (data['precoPromocao'] as num?)?.toDouble() ?? 0.0,
+      loja: data['loja'] ?? '',
+      codigoLoja: data['codigoLoja'] ?? '',
     );
   }
 }

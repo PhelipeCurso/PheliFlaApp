@@ -11,6 +11,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:pheli_fla_app/locale_provider.dart';
 import 'pages/noticias_page_coluna.dart';
+import 'screens/escolha_loja_screen.dart';
 
 // Notificações
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -108,9 +109,15 @@ class _FlamengoChatAppState extends State<FlamengoChatApp> {
               '/login': (context) => const LoginScreen(),
               '/register': (context) => const RegisterScreen(),
               '/room-selection': (context) => const RoomSelectionScreen(),
-              '/loja': (context) => const LojaScreen(),
+              '/loja-selection': (context) => const EscolhaLojaScreen(),
+              '/loja': (context) {
+                final Loja =
+                    ModalRoute.of(context)!.settings.arguments as String;
+                return LojaScreen(Loja: Loja);
+              },
               '/home_screen': (context) {
-                final nomeUsuario = ModalRoute.of(context)!.settings.arguments as String;
+                final nomeUsuario =
+                    ModalRoute.of(context)!.settings.arguments as String;
                 return HomeScreen(
                   nomeUsuario: nomeUsuario,
                   isDarkMode: isDarkMode,

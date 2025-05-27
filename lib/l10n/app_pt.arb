@@ -32,5 +32,19 @@
   "youtubeTitle": "Vídeos do PheliFla",
   "bottomNavGe": "GE",
   "bottomNavColuna": "Coluna",
-  "bottomNavYoutube": "YouTube"
+  "bottomNavYoutube": "YouTube",
+  "all": "Todos",
+  "categoryShirts": "Camisas",
+  "categoryCaps": "Bonés",
+  "categoryAccessories": "Acessórios",
+  "categoryMugs": "Canecas",
+  "categoryCropped": "Cropped",
+  "categoryBody": "Body",
+  "categoryKit": "Kit",
+  "genderMale": "Masculino",
+  "genderFemale": "Feminino",
+  "genderUnisex": "Unissex",
+  "typeChild": "Infantil",
+  "typeAdult": "Adulto",
+  "storeCode": "Código da Loja"
 }

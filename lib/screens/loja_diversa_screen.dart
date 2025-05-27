@@ -88,19 +88,18 @@ class _LojaScreenState extends State<LojaScreen> {
   void _mostrarAviso() {
     showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Atenção'),
-            content: const Text(
-              'Os valores podem variar no momento da compra. Confirme o valor no app de compra.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('OK'),
-              ),
-            ],
+      builder: (context) => AlertDialog(
+        title: const Text('Atenção'),
+        content: const Text(
+          'Os valores podem variar no momento da compra. Confirme o valor no app de compra.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
           ),
+        ],
+      ),
     );
   }
 
@@ -118,18 +117,13 @@ class _LojaScreenState extends State<LojaScreen> {
   }
 
   void _mostrarErro(String mensagem) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(mensagem)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(mensagem)));
   }
 
   List<Product> _filtrarProdutos(List<Product> produtos) {
     return produtos.where((p) {
-      final categoriaOk =
-          _categoriaSelecionada == 'Todos' ||
-          p.categoria == _categoriaSelecionada;
-      final generoOk =
-          _generoSelecionado == 'Todos' || p.genero == _generoSelecionado;
+      final categoriaOk = _categoriaSelecionada == 'Todos' || p.categoria == _categoriaSelecionada;
+      final generoOk = _generoSelecionado == 'Todos' || p.genero == _generoSelecionado;
       final tipoOk = _tipoSelecionado == 'Todos' || p.tipo == _tipoSelecionado;
       return categoriaOk && generoOk && tipoOk;
     }).toList();
@@ -147,10 +141,7 @@ class _LojaScreenState extends State<LojaScreen> {
         border: const OutlineInputBorder(),
       ),
       value: value,
-      items:
-          items
-              .map((item) => DropdownMenuItem(value: item, child: Text(item)))
-              .toList(),
+      items: items.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
       onChanged: onChanged,
     );
   }
@@ -192,59 +183,42 @@ class _LojaScreenState extends State<LojaScreen> {
                       Row(
                         children: [
                           Expanded(
-                            child: _buildDropdown(
-                              local.category,
-                              categorias,
-                              _categoriaSelecionada,
-                              (value) => setState(
-                                () => _categoriaSelecionada = value!,
-                              ),
-                            ),
+                            child: _buildDropdown(local.category, categorias, _categoriaSelecionada,
+                                (value) => setState(() => _categoriaSelecionada = value!)),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: _buildDropdown(
-                              local.gender,
-                              generos,
-                              _generoSelecionado,
-                              (value) =>
-                                  setState(() => _generoSelecionado = value!),
-                            ),
+                            child: _buildDropdown(local.gender, generos, _generoSelecionado,
+                                (value) => setState(() => _generoSelecionado = value!)),
                           ),
                         ],
                       ),
                       const SizedBox(height: 8),
-                      _buildDropdown(
-                        local.type,
-                        tipos,
-                        _tipoSelecionado,
-                        (value) => setState(() => _tipoSelecionado = value!),
-                      ),
+                      _buildDropdown(local.type, tipos, _tipoSelecionado,
+                          (value) => setState(() => _tipoSelecionado = value!)),
                     ],
                   ),
                 ),
               Expanded(
-                child:
-                    produtos.isEmpty
-                        ? Center(child: Text(local.noProducts))
-                        : GridView.builder(
-                          padding: const EdgeInsets.all(12),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 12,
-                                mainAxisSpacing: 12,
-                                childAspectRatio: 0.65,
-                              ),
-                          itemCount: produtos.length,
-                          itemBuilder: (context, index) {
-                            final item = produtos[index];
-                            return ProductCard(
-                              item: item,
-                              onTap: () => _abrirLink(item.url),
-                            );
-                          },
+                child: produtos.isEmpty
+                    ? Center(child: Text(local.noProducts))
+                    : GridView.builder(
+                        padding: const EdgeInsets.all(12),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 0.65,
                         ),
+                        itemCount: produtos.length,
+                        itemBuilder: (context, index) {
+                          final item = produtos[index];
+                          return ProductCard(
+                            item: item,
+                            onTap: () => _abrirLink(item.url),
+                          );
+                        },
+                      ),
               ),
             ],
           );
@@ -267,23 +241,15 @@ class ProductCard extends StatelessWidget {
       elevation: 4,
       child: InkWell(
         borderRadius: BorderRadius.circular(15),
-        onTap:
-            item.url.isNotEmpty
-                ? onTap
-                : () => ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(AppLocalizations.of(context)!.invalidUrl),
-                  ),
-                ),
+        onTap: item.url.isNotEmpty ? onTap : () => ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.invalidUrl))),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Stack(
               children: [
                 ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(15),
-                  ),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
                   child: Image.network(
                     item.imagem,
                     height: 175,
@@ -296,11 +262,10 @@ class ProductCard extends StatelessWidget {
                         child: Center(child: CircularProgressIndicator()),
                       );
                     },
-                    errorBuilder:
-                        (context, error, stackTrace) => const SizedBox(
-                          height: 175,
-                          child: Center(child: Icon(Icons.broken_image)),
-                        ),
+                    errorBuilder: (context, error, stackTrace) => const SizedBox(
+                      height: 175,
+                      child: Center(child: Icon(Icons.broken_image)),
+                    ),
                   ),
                 ),
                 if (item.tag.isNotEmpty)
@@ -308,13 +273,9 @@ class ProductCard extends StatelessWidget {
                     top: 8,
                     left: 8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color:
-                            item.tag == 'Promoção' ? Colors.green : Colors.blue,
+                        color: item.tag == 'Promoção' ? Colors.green : Colors.blue,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -336,10 +297,7 @@ class ProductCard extends StatelessWidget {
                 children: [
                   Text(
                     item.nome,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),

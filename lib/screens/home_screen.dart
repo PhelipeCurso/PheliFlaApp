@@ -12,6 +12,7 @@ import 'ge_news.dart';
 import 'PheliFla_youtube.dart';
 import 'package:pheli_fla_app/widgets/news_card.dart';
 import 'package:pheli_fla_app/pages/agenda_rubro_negra_page.dart';
+import 'package:pheli_fla_app/screens/escolha_loja_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String nomeUsuario;
@@ -206,7 +207,13 @@ class _HomeScreenState extends State<HomeScreen> {
             ListTile(
               leading: const Icon(Icons.shopping_cart),
               title: Text(AppLocalizations.of(context)!.store),
-              onTap: () => Navigator.pushNamed(context, '/loja'),
+              onTap: () {
+                Navigator.pop(context); // Fecha o drawer
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const EscolhaLojaScreen()),
+                );
+              },
             ),
             ListTile(
               leading: const Icon(Icons.settings),
