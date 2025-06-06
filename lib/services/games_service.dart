@@ -3,45 +3,35 @@ import 'dart:convert';
 import '../models/game.dart';
 
 class GamesService {
-  static const String _apiKey = 'f55e7b3b87e1e2f5cbec51dacad2d32d';
-  static const String _baseUrl = 'v3.football.api-sports.io';
+  static const String _baseDomain = 'projetoapi-production-a6f9.up.railway.app';
 
-  static Future<List<Game>> fetchGames({
-    required int leagueId,
-    required int season,
-    int? teamId, // deixe como null para buscar todos os times
-    bool fetchUpcoming = false,
-  }) async {
-    final queryParams = {
-      fetchUpcoming ? 'next' : 'last': '10',
-      'league': leagueId.toString(),
-      'season': season.toString(),
-    };
+  /// Busca jogos com filtro opcional por competição.
+  static Future<List<Game>> fetchGames({String? competicao}) async {
+    Uri uri = Uri.https(_baseDomain, '/jogos');
 
-    if (teamId != null) {
-      queryParams['team'] = teamId.toString();
+    if (competicao != null && competicao.isNotEmpty) {
+      uri = uri.replace(queryParameters: {'competicao': competicao});
     }
-
-    final url = Uri.https(_baseUrl, 'fixtures', queryParams);
 
     try {
       final response = await http.get(
-        url,
-        headers: {'x-apisports-key': _apiKey, 'Accept': 'application/json'},
+        uri,
+        headers: {'Accept': 'application/json'},
       );
-      print('URL chamada: $url'); // 🐛 Verifica se a URL está correta
-      print('Status code: ${response.statusCode}'); // ✅ Mostra se deu 200
-      print('Resposta bruta: ${response.body}'); // 📦 Mostra o JSON completo
+
+      print('🔗 URL chamada: $uri');
+      print('📦 Status code: ${response.statusCode}');
+      print('📏 Tamanho do body: ${response.body.length}');
+      print('📝 Resposta bruta: ${response.body}');
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final fixtures = data['response'] as List;
-        return fixtures.map((f) => Game.fromApiFootballJson(f)).toList();
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.map((json) => Game.fromJson(json)).toList();
       } else {
         throw Exception('Erro ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
-      print('Erro na API-Football: $e');
+      print('❌ Erro ao buscar jogos: $e');
       return [];
     }
   }

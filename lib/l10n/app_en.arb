@@ -48,6 +48,16 @@
   "genderUnisex": "Unissex",
   "typeChild": "Infantil",
   "typeAdult": "Adulto",
-  "storeCode": "Código da Loja"
+  "storeCode": "Código da Loja",
+   "assinaturaPlus": "Plus Subscription",
+  "bemVindoAoPlus": "Welcome to Flamengo Plus!",
+  "descricaoAssinaturaPlus": "Unlock exclusive benefits and help keep the app running.",
+  "semAnuncios": "Ad-free experience",
+  "acessoAntecipadoNoticias": "Early access to news",
+  "chatExclusivo": "Exclusive chat for subscribers",
+  "ajudeProjeto": "Support the project",
+  "assinarAgora": "Subscribe now",
+  "termosAssinatura": "Terms and cancellation policy",
+  "assinaturaEmBreve": "Subscription system coming soon"
 
 }

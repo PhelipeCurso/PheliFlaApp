@@ -1,81 +1,66 @@
 class Game {
-  final String league;
-  final String homeTeam;
-  final String awayTeam;
-  final String homeBadge;
-  final String awayBadge;
-  final String date;
-  final String time;
-  final String venue;
-  final int? homeScore;
-  final int? awayScore;
+  final int id;
+  final String data;
+  final String hora;
+  final String local;
+  final String adversario;
+  final String competicao;
+  final String placar;
+  final String etapa;
+  final String escudoAdversario;
+  final String escudotime;
 
   Game({
-    required this.league,
-    required this.homeTeam,
-    required this.awayTeam,
-    required this.homeBadge,
-    required this.awayBadge,
-    required this.date,
-    required this.time,
-    required this.venue,
-    this.homeScore,
-    this.awayScore,
+    required this.id,
+    required this.data,
+    required this.hora,
+    required this.local,
+    required this.adversario,
+    required this.competicao,
+    required this.placar,
+    required this.etapa,
+    required this.escudoAdversario,
+    required this.escudotime,
   });
 
   factory Game.fromJson(Map<String, dynamic> json) {
-    int? parseScore(dynamic value) {
-      if (value is int) return value;
-      if (value is String && value.isNotEmpty) return int.tryParse(value);
-      return null;
-    }
+    final bool concluido = json['concluido'] == true;
+    final int? golsFlamengo = json['gols_flamengo'];
+    final int? golsAdversario = json['gols_adversario'];
+
+    // Gera placar se o jogo estiver concluído
+    final String placar =
+        (concluido && golsFlamengo != null && golsAdversario != null)
+            ? '$golsFlamengo x $golsAdversario'
+            : 'A definir';
+
+    // Usa etapa se existir, senão define uma padrão
+    final String etapa = json['etapa']?.toString() ?? 'Fase única';
 
     return Game(
-      league: json['strLeague'] ?? '',
-      homeTeam: json['strHomeTeam'] ?? '',
-      awayTeam: json['strAwayTeam'] ?? '',
-      homeBadge: json['strHomeTeamBadge'] ?? '',
-      awayBadge: json['strAwayTeamBadge'] ?? '',
-      date: json['dateEvent'] ?? '',
-      time: json['strTime'] ?? '',
-      venue: json['strVenue'] ?? '',
-      homeScore: parseScore(json['intHomeScore']),
-      awayScore: parseScore(json['intAwayScore']),
+      id: json['id'],
+      data: json['data'],
+      hora: json['hora']?.toString() ?? '',
+      local: json['local'],
+      adversario: json['adversario'],
+      competicao: json['competicao'],
+      placar: placar,
+      etapa: etapa,
+      escudoAdversario: json['escudo_adversario'] ?? '',
+      escudotime: json['escudo_time'] ?? '',
     );
   }
 
-  factory Game.fromApiFootballJson(Map<String, dynamic> json) {
-    final fixture = json['fixture'] ?? {};
-    final teams = json['teams'] ?? {};
-    final goals = json['goals'] ?? {};
-    final league = json['league'] ?? {};
-    final venue = fixture['venue'] ?? {};
-
-    String date = '';
-    String time = '';
-
-    try {
-      final utcDateTime = DateTime.parse(fixture['date']).toUtc();
-      // Brazil Time = UTC -3
-      final brazilTime = utcDateTime.subtract(const Duration(hours: 3));
-      date = brazilTime.toIso8601String().split('T')[0];
-      time =
-          '${brazilTime.hour.toString().padLeft(2, '0')}:${brazilTime.minute.toString().padLeft(2, '0')}';
-    } catch (_) {
-      // fallback to empty if parse fails
-    }
-
-    return Game(
-      league: league['name'] ?? '',
-      homeTeam: teams['home']?['name'] ?? '',
-      awayTeam: teams['away']?['name'] ?? '',
-      homeBadge: teams['home']?['logo'] ?? '',
-      awayBadge: teams['away']?['logo'] ?? '',
-      date: date,
-      time: time,
-      venue: venue['name'] ?? '',
-      homeScore: goals['home'] is int ? goals['home'] : null,
-      awayScore: goals['away'] is int ? goals['away'] : null,
-    );
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'data': data,
+      'hora': hora,
+      'local': local,
+      'adversario': adversario,
+      'competicao': competicao,
+      'placar': placar,
+      'etapa': etapa,
+    };
   }
 }

@@ -13,17 +13,20 @@ import 'PheliFla_youtube.dart';
 import 'package:pheli_fla_app/widgets/news_card.dart';
 import 'package:pheli_fla_app/pages/agenda_rubro_negra_page.dart';
 import 'package:pheli_fla_app/screens/escolha_loja_screen.dart';
+import 'package:pheli_fla_app/screens/assinatura_plus_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String nomeUsuario;
   final bool isDarkMode;
   final void Function(bool) onThemeChanged;
+  final bool isPlusUser;
 
   const HomeScreen({
     Key? key,
     required this.nomeUsuario,
     required this.isDarkMode,
     required this.onThemeChanged,
+    required this.isPlusUser,
   }) : super(key: key);
 
   @override
@@ -186,24 +189,76 @@ class _HomeScreenState extends State<HomeScreen> {
               title: Text(AppLocalizations.of(context)!.agendaTitle),
               onTap: () {
                 Navigator.pop(context); // Fecha o drawer
-                showDialog(
-                  context: context,
-                  builder:
-                      (context) => AlertDialog(
-                        title: const Text('Em desenvolvimento'),
-                        content: const Text(
-                          'Este recurso está em desenvolvimento. Em breve estará disponível!',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: const Text('OK'),
+                /* if (widget.isPlusUser) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => AgendaRubroNegraPage()),
+                  );
+                } else {
+                  showDialog(
+                    context: context,
+                    builder:
+                        (context) => AlertDialog(
+                          title: const Text('Recurso exclusivo'),
+                          content: const Text(
+                            'A Agenda Rubro-Negra é um recurso exclusivo para assinantes Plus.',
                           ),
-                        ],
-                      ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: const Text('Cancelar'),
+                            ),
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                                // Aqui você pode redirecionar para a tela de assinatura Plus no futuro
+                                showDialog(
+                                  context: context,
+                                  builder:
+                                      (context) => AlertDialog(
+                                        title: const Text('Assinar Plus'),
+                                        content: const Text(
+                                          'Para acessar este recurso, é necessário assinar o plano Plus.',
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed:
+                                                () =>
+                                                    Navigator.of(context).pop(),
+                                            child: const Text('Fechar'),
+                                          ),
+                                          ElevatedButton(
+                                            onPressed: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder:
+                                                      (_) =>
+                                                          const AssinaturaPlusScreen(),
+                                                ),
+                                              );
+                                            },
+                                            child: const Text('Assinar agora'),
+                                          ),
+                                        ],
+                                      ),
+                                );
+                              },
+                              child: const Text('Assinar Plus'),
+                            ),
+                          ],
+                        ),
+                  );
+                }
+              },
+            ),*/
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => AgendaRubroNegraPage()),
                 );
               },
             ),
+
             ListTile(
               leading: const Icon(Icons.shopping_cart),
               title: Text(AppLocalizations.of(context)!.store),
@@ -227,6 +282,19 @@ class _HomeScreenState extends State<HomeScreen> {
                           isDarkMode: isDarkMode,
                           onThemeChanged: toggleTheme,
                         ),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.star, color: Colors.amber),
+              title: const Text('Assinar Agora'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AssinaturaPlusScreen(),
                   ),
                 );
               },
@@ -320,6 +388,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 height: 180,
                 fit: BoxFit.cover,
               ),
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                color: Colors.black.withOpacity(0.6),
+                padding: const EdgeInsets.all(8),
+                child: Text(
+                  titulo,
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                ),
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Text(

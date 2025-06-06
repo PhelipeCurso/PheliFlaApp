@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 import 'package:pheli_fla_app/locale_provider.dart';
 import 'pages/noticias_page_coluna.dart';
 import 'screens/escolha_loja_screen.dart';
+import 'providers/user_plus_provider.dart';
 
 // Notificações
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -68,8 +69,11 @@ class _FlamengoChatAppState extends State<FlamengoChatApp> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => LocaleProvider(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => LocaleProvider()),
+        ChangeNotifierProvider(create: (_) => UserPlusProvider()),
+      ],
       child: Consumer<LocaleProvider>(
         builder: (context, localeProvider, child) {
           return MaterialApp(
@@ -118,10 +122,22 @@ class _FlamengoChatAppState extends State<FlamengoChatApp> {
               '/home_screen': (context) {
                 final nomeUsuario =
                     ModalRoute.of(context)!.settings.arguments as String;
-                return HomeScreen(
-                  nomeUsuario: nomeUsuario,
-                  isDarkMode: isDarkMode,
-                  onThemeChanged: toggleTheme,
+
+                final userPlusProvider = Provider.of<UserPlusProvider>(
+                  context,
+                  listen: false,
+                );
+                userPlusProvider.checkPlusStatus(); // verifica se é Plus
+
+                return Consumer<UserPlusProvider>(
+                  builder: (context, plusProvider, _) {
+                    return HomeScreen(
+                      nomeUsuario: nomeUsuario,
+                      isDarkMode: isDarkMode,
+                      onThemeChanged: toggleTheme,
+                      isPlusUser: plusProvider.isPlus,
+                    );
+                  },
                 );
               },
             },

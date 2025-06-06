@@ -57,6 +57,7 @@ class RoomSelectionScreen extends StatelessWidget {
                         //photoUrl: photoUrl,
                         isDarkMode: false, // ou pegue do app
                         onThemeChanged: (_) {},
+                        isPlusUser: true,
                       ),
                 ),
                 //'/home_screen',

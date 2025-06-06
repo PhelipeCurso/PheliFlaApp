@@ -78,6 +78,7 @@ class RoomSelectionScreen extends StatelessWidget {
               nomeUsuario: nomeUsuario,
               isDarkMode: false,
               onThemeChanged: (_) {},
+              isPlusUser: true,
             ),
       ),
     );
