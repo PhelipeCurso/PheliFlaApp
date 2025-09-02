@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:pheli_fla_app/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import '../locale_provider.dart'; // Ajuste o caminho conforme seu projeto
 import 'package:cloud_firestore/cloud_firestore.dart';

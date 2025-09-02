@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:pheli_fla_app/gen_l10n/app_localizations.dart';
 import 'package:pheli_fla_app/providers/user_plus_provider.dart';
 
 class AssinaturaPlusScreen extends StatelessWidget {

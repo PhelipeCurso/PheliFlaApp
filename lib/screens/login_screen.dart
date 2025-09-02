@@ -110,6 +110,7 @@ class _LoginScreenState extends State<LoginScreen> {
         await userDocRef.set({
           'nomeUsuario': googleUser.displayName ?? 'Usuário Google',
           'email': googleUser.email,
+          'dataCadastro': Timestamp.now(), //  data de cadastro
         });
       }
       await salvarTokenENotificacoes(
@@ -136,6 +137,7 @@ class _LoginScreenState extends State<LoginScreen> {
       'fcmToken': token,
       'notificacoesAtivadas': true, // Ativa por padrão
       'nomeUsuario': nomeUsuario,
+      'dataCadastro': Timestamp.now(), // <-- salva a data aqui também
     }, SetOptions(merge: true));
   }
 

@@ -50,7 +50,7 @@ class EscolhaLojaScreen extends StatelessWidget {
                   MaterialPageRoute(
                     builder:
                         (_) => const lojaDiversa.LojaScreen(
-                          Loja: 'Produtos Variados',
+                          Loja: 'Loja de Produtos Variados',
                         ),
                   ),
                 );

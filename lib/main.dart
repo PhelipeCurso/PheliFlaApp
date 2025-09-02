@@ -7,7 +7,7 @@ import 'screens/register_screen.dart';
 import 'screens/room_selection_screen.dart';
 import 'screens/loja_screen.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:pheli_fla_app/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:pheli_fla_app/locale_provider.dart';
 import 'pages/noticias_page_coluna.dart';

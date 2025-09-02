@@ -8,7 +8,7 @@ class ProductService {
     Query query = FirebaseFirestore.instance.collection('produtos');
 
     if (Loja != null && Loja.isNotEmpty) {
-      query = query.where('Loja', isEqualTo: Loja);
+      query = query.where('loja', isEqualTo: Loja);
     }
 
     return query.snapshots().map(
