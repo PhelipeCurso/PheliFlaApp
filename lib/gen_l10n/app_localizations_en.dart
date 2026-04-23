@@ -12,6 +12,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settings => 'Settings';
 
   @override
+  String get notifications => 'Notifications';
+
+  @override
   String get darkMode => 'Dark Mode';
 
   @override
@@ -142,22 +145,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get categoryKit => 'Kit';
 
   @override
-  String get genderMale => 'Masculino';
+  String get genderMale => 'Male';
 
   @override
-  String get genderFemale => 'Feminino';
+  String get genderFemale => 'Female';
 
   @override
-  String get genderUnisex => 'Unissex';
+  String get genderUnisex => 'Unisex';
 
   @override
-  String get typeChild => 'Infantil';
+  String get typeChild => 'Child';
 
   @override
-  String get typeAdult => 'Adulto';
+  String get typeAdult => 'Adult';
 
   @override
-  String get storeCode => 'Código da Loja';
+  String get storeCode => 'Store Code';
 
   @override
   String get assinaturaPlus => 'Plus Subscription';
@@ -189,4 +192,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get assinaturaEmBreve => 'Subscription system coming soon';
+
+  @override
+  String get local_all => 'All';
+
+  @override
+  String get local_categoryShirts => 'Shirts';
+
+  @override
+  String get local_categoryCaps => 'Caps';
+
+  @override
+  String get local_categoryAccessories => 'Accessories';
+
+  @override
+  String get local_categoryMugs => 'Mugs';
+
+  @override
+  String get local_categoryCropped => 'Cropped';
+
+  @override
+  String get local_categoryBody => 'Body';
+
+  @override
+  String get local_categoryKit => 'Kit';
+
+  @override
+  String get local_genderMale => 'Male';
+
+  @override
+  String get local_genderFemale => 'Female';
+
+  @override
+  String get local_escolhaLoja => 'Choose your store';
 }

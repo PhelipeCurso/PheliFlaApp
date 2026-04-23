@@ -21,7 +21,8 @@ dependencies:
   google_mobile_ads: ^4.0.0
   in_app_purchase: ^3.1.9
   flutter_gen: any
-
+  flutter_svg: ^2.0.0
+  cached_network_image: ^3.3.0
 
   flutter_localizations:
     sdk: flutter
@@ -66,6 +67,10 @@ flutter:
     - assets/images/fundos/Pedro.png
     - assets/images/fundos/UrubuFundo.png
     - assets/images/imagem_padrao.png
+    - assets/images/loja_banner.jpg
+    - assets/images/flamengo_logo.svg
+    - assets/images/loja_banner.png
+    
 
   fonts:
     - family: Raleway

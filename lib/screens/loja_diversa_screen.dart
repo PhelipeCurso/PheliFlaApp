@@ -1,13 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:pheli_fla_app/gen_l10n/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/product.dart';
 import '../services/product_service.dart';
 
 class LojaScreen extends StatefulWidget {
-  const LojaScreen({super.key, required this.Loja});
+  const LojaScreen({
+    super.key, 
+    required this.Loja, 
+    this.heroTag,
+    this.bannerImage, // Adicionei para manter a consistência
+  });
 
   final String Loja;
+  final String? heroTag;
+  final String? bannerImage;
 
   @override
   State<LojaScreen> createState() => _LojaScreenState();
@@ -16,93 +24,156 @@ class LojaScreen extends StatefulWidget {
 class _LojaScreenState extends State<LojaScreen> {
   late Future<List<Product>> _produtosFuture;
 
-  String _categoriaSelecionada = 'Todos';
-  String _generoSelecionado = 'Todos';
-  String _tipoSelecionado = 'Todos';
+  // Filtros selecionados
+  String _catSel = 'Todos';
+  String _genSel = 'Todos';
+  String _tipoSel = 'Todos';
 
-  bool _showFilters = true;
-  bool _dadosIniciaisCarregados = false;
-
+  // Listas de filtros (serão preenchidas dinamicamente)
   List<String> categorias = ['Todos'];
   List<String> generos = ['Todos'];
   List<String> tipos = ['Todos'];
 
-  late Map<String, String> categoriaMap;
-  late Map<String, String> generoMap;
-  late Map<String, String> tipoMap;
-
   @override
   void initState() {
     super.initState();
-    _produtosFuture = carregarProdutos();
+    _produtosFuture = _inicializarDados();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _mostrarAviso());
   }
 
-  Future<List<Product>> carregarProdutos() async {
+  Future<List<Product>> _inicializarDados() async {
     final produtos = await ProductService.fetchProdutos(Loja: widget.Loja);
-    final categoriasUnicas = produtos.map((p) => p.categoria).toSet().toList();
-    final generosUnicos = produtos.map((p) => p.genero).toSet().toList();
-    final tiposUnicos = produtos.map((p) => p.tipo).toSet().toList();
-
-    categorias = ['Todos', ...categoriasUnicas];
-    generos = ['Todos', ...generosUnicos];
-    tipos = ['Todos', ...tiposUnicos];
-
+    
+    setState(() {
+      categorias = ['Todos', ...produtos.map((p) => p.categoria).toSet()];
+      generos = ['Todos', ...produtos.map((p) => p.genero).toSet()];
+      tipos = ['Todos', ...produtos.map((p) => p.tipo).toSet()];
+    });
+    
     return produtos;
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_dadosIniciaisCarregados) {
-      final local = AppLocalizations.of(context)!;
+  Widget build(BuildContext context) {
+    final local = AppLocalizations.of(context)!;
 
-      categoriaMap = {
-        local.all: 'Todos',
-        local.categoryShirts: 'Camisas',
-        local.categoryCaps: 'Bonés',
-        local.categoryAccessories: 'Acessórios',
-        local.categoryMugs: 'Canecas',
-        local.categoryCropped: 'Cropped',
-        local.categoryBody: 'Body',
-        local.categoryKit: 'kit',
-      };
+    return Scaffold(
+      body: FutureBuilder<List<Product>>(
+        future: _produtosFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return const Center(child: Text('Erro ao carregar produtos.'));
+          }
 
-      generoMap = {
-        local.all: 'Todos',
-        local.genderMale: 'Masculino',
-        local.genderFemale: 'Feminino',
-        local.genderUnisex: 'Unissex',
-      };
+          final listaFiltrada = _filtrar(snapshot.data ?? []);
 
-      tipoMap = {
-        local.all: 'Todos',
-        local.typeChild: 'Infantil',
-        local.typeAdult: 'Adulto',
-      };
+          return CustomScrollView(
+            slivers: [
+              // 1. Cabeçalho Animado
+              _buildHeader(context),
 
-      Future.delayed(Duration.zero, _mostrarAviso);
-      _dadosIniciaisCarregados = true;
-    }
-  }
-
-  void _mostrarAviso() {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Atenção'),
-            content: const Text(
-              'Os valores podem variar no momento da compra. Confirme o valor no app de compra.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('OK'),
+              // 2. Barra de Filtros (Horizontal)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Column(
+                    children: [
+                      _buildChipFilter(categorias, _catSel, (v) => setState(() => _catSel = v)),
+                      _buildChipFilter(generos, _genSel, (v) => setState(() => _genSel = v)),
+                      _buildChipFilter(tipos, _tipoSel, (v) => setState(() => _tipoSel = v)),
+                    ],
+                  ),
+                ),
               ),
+
+              // 3. Grid de Produtos
+              listaFiltrada.isEmpty
+                  ? SliverFillRemaining(child: Center(child: Text(local.noProducts)))
+                  : SliverPadding(
+                      padding: const EdgeInsets.all(12),
+                      sliver: SliverGrid(
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 0.62,
+                        ),
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) => _ProductCard(
+                            item: listaFiltrada[index],
+                            onTap: () => _abrirLink(listaFiltrada[index].url),
+                          ),
+                          childCount: listaFiltrada.length,
+                        ),
+                      ),
+                    ),
             ],
-          ),
+          );
+        },
+      ),
     );
   }
+
+  // --- Widgets Auxiliares ---
+
+  Widget _buildHeader(BuildContext context) {
+    return SliverAppBar(
+      expandedHeight: 180,
+      pinned: true,
+      backgroundColor: Colors.red[900],
+      flexibleSpace: FlexibleSpaceBar(
+        title: Text(widget.Loja, style: const TextStyle(fontWeight: FontWeight.bold)),
+        background: widget.heroTag != null 
+          ? Hero(
+              tag: widget.heroTag!,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.asset(widget.bannerImage ?? 'assets/images/loja_banner.png', fit: BoxFit.cover),
+                  const DecoratedBox(decoration: BoxDecoration(color: Colors.black26)),
+                ],
+              ),
+            )
+          : null,
+      ),
+    );
+  }
+
+  Widget _buildChipFilter(List<String> items, String selected, Function(String) onSelect) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Row(
+        children: items.map((item) {
+          final isSelected = selected == item;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ChoiceChip(
+              label: Text(item, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : Colors.black87)),
+              selected: isSelected,
+              onSelected: (val) => onSelect(item),
+              selectedColor: Colors.red[800],
+              backgroundColor: Colors.grey[200],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  List<Product> _filtrar(List<Product> lista) {
+    return lista.where((p) {
+      final c = _catSel == 'Todos' || p.categoria == _catSel;
+      final g = _genSel == 'Todos' || p.genero == _genSel;
+      final t = _tipoSel == 'Todos' || p.tipo == _tipoSel;
+      return c && g && t;
+    }).toList();
+  }
+
+  // --- Funções de Suporte ---
 
   Future<void> _abrirLink(String url) async {
     try {
@@ -118,266 +189,92 @@ class _LojaScreenState extends State<LojaScreen> {
   }
 
   void _mostrarErro(String mensagem) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(mensagem)));
-  }
-
-  List<Product> _filtrarProdutos(List<Product> produtos) {
-    return produtos.where((p) {
-      final categoriaOk =
-          _categoriaSelecionada == 'Todos' ||
-          p.categoria == _categoriaSelecionada;
-      final generoOk =
-          _generoSelecionado == 'Todos' || p.genero == _generoSelecionado;
-      final tipoOk = _tipoSelecionado == 'Todos' || p.tipo == _tipoSelecionado;
-      return categoriaOk && generoOk && tipoOk;
-    }).toList();
-  }
-
-  Widget _buildDropdown(
-    String label,
-    List<String> items,
-    String value,
-    void Function(String?) onChanged,
-  ) {
-    return DropdownButtonFormField<String>(
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
-      ),
-      value: value,
-      items:
-          items
-              .map((item) => DropdownMenuItem(value: item, child: Text(item)))
-              .toList(),
-      onChanged: onChanged,
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(mensagem), backgroundColor: Colors.red),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final local = AppLocalizations.of(context)!;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(local.storeTitle),
-        backgroundColor: Colors.red[800],
+  void _mostrarAviso() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Atenção'),
+        content: const Text(
+          'Os valores podem variar no momento da compra. Confirme o valor no app de compra.',
+        ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => setState(() => _showFilters = !_showFilters),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
           ),
         ],
-      ),
-      body: FutureBuilder<List<Product>>(
-        future: _produtosFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return const Center(child: Text('Erro ao carregar produtos.'));
-          }
-
-          final produtos = _filtrarProdutos(snapshot.data ?? []);
-
-          return Column(
-            children: [
-              if (_showFilters)
-                Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildDropdown(
-                              local.category,
-                              categorias,
-                              _categoriaSelecionada,
-                              (value) => setState(
-                                () => _categoriaSelecionada = value!,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildDropdown(
-                              local.gender,
-                              generos,
-                              _generoSelecionado,
-                              (value) =>
-                                  setState(() => _generoSelecionado = value!),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      _buildDropdown(
-                        local.type,
-                        tipos,
-                        _tipoSelecionado,
-                        (value) => setState(() => _tipoSelecionado = value!),
-                      ),
-                    ],
-                  ),
-                ),
-              Expanded(
-                child:
-                    produtos.isEmpty
-                        ? Center(child: Text(local.noProducts))
-                        : GridView.builder(
-                          padding: const EdgeInsets.all(12),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 12,
-                                mainAxisSpacing: 12,
-                                childAspectRatio: 0.65,
-                              ),
-                          itemCount: produtos.length,
-                          itemBuilder: (context, index) {
-                            final item = produtos[index];
-                            return ProductCard(
-                              item: item,
-                              onTap: () => _abrirLink(item.url),
-                            );
-                          },
-                        ),
-              ),
-            ],
-          );
-        },
       ),
     );
   }
 }
 
-class ProductCard extends StatelessWidget {
+class _ProductCard extends StatelessWidget {
   final Product item;
   final VoidCallback onTap;
 
-  const ProductCard({super.key, required this.item, required this.onTap});
+  const _ProductCard({required this.item, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      elevation: 4,
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
-        borderRadius: BorderRadius.circular(15),
-        onTap:
-            item.url.isNotEmpty
-                ? onTap
-                : () => ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(AppLocalizations.of(context)!.invalidUrl),
-                  ),
-                ),
+        onTap: item.url.isNotEmpty ? onTap : null,
+        borderRadius: BorderRadius.circular(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(15),
-                  ),
-                  child: Image.network(
-                    item.imagem,
-                    height: 175,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return const SizedBox(
-                        height: 175,
-                        child: Center(child: CircularProgressIndicator()),
-                      );
-                    },
-                    errorBuilder:
-                        (context, error, stackTrace) => const SizedBox(
-                          height: 175,
-                          child: Center(child: Icon(Icons.broken_image)),
-                        ),
-                  ),
-                ),
-                if (item.tag.isNotEmpty)
-                  Positioned(
-                    top: 8,
-                    left: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color:
-                            item.tag == 'Promoção' ? Colors.green : Colors.blue,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        item.tag,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+            // Imagem com Badge
+            Expanded(
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                    child: CachedNetworkImage(
+                      imageUrl: item.imagem,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => Container(color: Colors.grey[100]),
+                      errorWidget: (_, __, ___) => const Icon(Icons.broken_image),
                     ),
                   ),
-              ],
+                  if (item.tag.isNotEmpty)
+                    Positioned(
+                      top: 8, left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: item.tag == 'Promoção' ? Colors.green : Colors.red,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(item.tag, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                ],
+              ),
             ),
+            
+            // Texto e Preços
             Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    item.nome,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  if ((item.precoPromocional ?? 0) > 0 &&
-                      (item.precoPromocional ?? 0) < (item.preco ?? 0))
-                    Row(
-                      children: [
-                        Text(
-                          'R\$ ${(item.preco ?? 0).toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                            decoration: TextDecoration.lineThrough,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'R\$ ${(item.precoPromocional ?? 0).toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.green,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    )
-                  else
-                    Text(
-                      'R\$ ${(item.preco ?? 0).toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(context).textTheme.bodyMedium?.color,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  const SizedBox(height: 4),
-                  const Icon(Icons.shopping_cart_outlined, size: 20),
+                  Text(item.nome, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 6),
+                  if ((item.precoPromocional ?? 0) > 0) ...[
+                    Text('R\$ ${item.preco?.toStringAsFixed(2)}', style: const TextStyle(fontSize: 11, color: Colors.grey, decoration: TextDecoration.lineThrough)),
+                    Text('R\$ ${item.precoPromocional?.toStringAsFixed(2)}', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.green)),
+                  ] else
+                    Text('R\$ ${item.preco?.toStringAsFixed(2)}', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),

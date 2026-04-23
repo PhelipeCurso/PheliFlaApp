@@ -5,7 +5,7 @@ import 'package:pheli_fla_app/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import '../locale_provider.dart'; // Ajuste o caminho conforme seu projeto
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+
 
 class SettingsScreen extends StatefulWidget {
   final bool isDarkMode;

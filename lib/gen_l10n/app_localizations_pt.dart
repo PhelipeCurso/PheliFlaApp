@@ -12,6 +12,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get settings => 'Configurações';
 
   @override
+  String get notifications => 'Notificações';
+
+  @override
   String get darkMode => 'Modo escuro';
 
   @override
@@ -189,4 +192,37 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get assinaturaEmBreve => 'Sistema de assinatura disponível em breve';
+
+  @override
+  String get local_all => 'All';
+
+  @override
+  String get local_categoryShirts => 'Shirts';
+
+  @override
+  String get local_categoryCaps => 'Caps';
+
+  @override
+  String get local_categoryAccessories => 'Accessories';
+
+  @override
+  String get local_categoryMugs => 'Mugs';
+
+  @override
+  String get local_categoryCropped => 'Cropped';
+
+  @override
+  String get local_categoryBody => 'Body';
+
+  @override
+  String get local_categoryKit => 'Kit';
+
+  @override
+  String get local_genderMale => 'Male';
+
+  @override
+  String get local_genderFemale => 'Female';
+
+  @override
+  String get local_escolhaLoja => 'Escolha sua loja';
 }

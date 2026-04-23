@@ -45,7 +45,7 @@ class Product {
               ? double.tryParse(data['precoPromocao']) ?? 0.0
               : (data['precoPromocao'] as num?)?.toDouble() ?? 0.0,
       loja: data['loja'] ?? '',
-      codigoLoja: data['codigoLoja'] ?? '',
+      codigoLoja: data['codigoLoja'] ?? data['codigo'] ?? '',
     );
   }
 }

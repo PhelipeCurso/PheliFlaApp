@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:pheli_fla_app/gen_l10n/app_localizations.dart';
+import 'package:pheli_fla_app/config_screenTheme.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // IMPORTANTE
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' as htmlParser;
-import 'package:xml/xml.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:pheli_fla_app/config_screenTheme.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+
+// Seus imports
+import 'package:pheli_fla_app/gen_l10n/app_localizations.dart';
 import 'package:pheli_fla_app/services/rss_service.dart';
 import 'package:pheli_fla_app/pages/noticias_page_coluna.dart';
 import 'ge_news.dart';
@@ -14,6 +17,7 @@ import 'package:pheli_fla_app/widgets/news_card.dart';
 import 'package:pheli_fla_app/pages/agenda_rubro_negra_page.dart';
 import 'package:pheli_fla_app/screens/escolha_loja_screen.dart';
 import 'package:pheli_fla_app/screens/assinatura_plus_screen.dart';
+import 'NoticiaDetalhePage.dart';
 
 class HomeScreen extends StatefulWidget {
   final String nomeUsuario;
@@ -36,6 +40,9 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late bool isDarkMode;
   int _selectedIndex = 0;
+  
+  // Futures para as 4 abas
+  late Future<List<Map<String, String>>> noticiasPheliFla;
   late Future<List<Map<String, String>>> noticiasGE;
   late Future<List<Map<String, String>>> noticiasColuna;
 
@@ -43,287 +50,125 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     isDarkMode = widget.isDarkMode;
+    
+    // Inicialização de todas as fontes de dados
+    noticiasPheliFla = _buscarNoticiasPheliFla();
     noticiasGE = _buscarNoticiasGE();
     noticiasColuna = fetchColunaFlaRSS();
   }
 
+  // --- BUSCA FIRESTORE (SUAS POSTAGENS) ---
+  Future<List<Map<String, String>>> _buscarNoticiasPheliFla() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('noticias')
+          .orderBy('dataCriacao', descending: true)
+          .get();
+
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'titulo': data['titulo']?.toString() ?? 'Sem título',
+          'link': data['id']?.toString() ?? '', // Ou link externo se houver
+          'imagem': data['imagemUrl']?.toString() ?? '',
+          'conteudo': data['conteudo']?.toString() ?? '',
+        };
+      }).toList();
+    } catch (e) {
+      debugPrint('Erro Firestore PheliFla: $e');
+      return [];
+    }
+  }
+ 
+
+  // --- BUSCA GE (SCRAPING) ---
+  Future<List<Map<String, String>>> _buscarNoticiasGE() async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://ge.globo.com/futebol/times/flamengo/'),
+        headers: {"User-Agent": "Mozilla/5.0"}, 
+      );
+
+      if (response.statusCode == 200) {
+        final document = htmlParser.parse(response.body);
+        final elements = document.querySelectorAll('.feed-post-body');
+        List<Map<String, String>> resultados = [];
+
+        for (var element in elements) {
+          final linkElement = element.querySelector('.feed-post-link');
+          final link = linkElement?.attributes['href'] ?? '';
+          if (link.contains('globo.com')) {
+            final titulo = linkElement?.text.trim() ?? 'Sem título';
+            final img = element.parent?.querySelector('img')?.attributes['src'] ?? '';
+            resultados.add({
+              'titulo': titulo,
+              'link': link.startsWith('http') ? link : 'https:$link',
+              'imagem': img,
+            });
+          }
+          if (resultados.length >= 10) break;
+        }
+        return resultados;
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
   void toggleTheme(bool value) {
-    setState(() {
-      isDarkMode = value;
-    });
+    setState(() => isDarkMode = value);
     widget.onThemeChanged(value);
   }
 
   void _logout(BuildContext context) async {
     await FirebaseAuth.instance.signOut();
+    if (!mounted) return;
     Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
   }
 
-  Future<List<Map<String, String>>> _buscarNoticiasGE() async {
-    try {
-      final response = await http.get(
-        Uri.parse('https://ge.globo.com/futebol/times/flamengo/'),
-      );
-      if (response.statusCode == 200) {
-        final document = htmlParser.parse(response.body);
-        final elements = document.querySelectorAll('.feed-post-body');
-        return elements.take(10).map((element) {
-          final titulo =
-              element.querySelector('.feed-post-link')?.text.trim() ??
-              'Sem título';
-          final link =
-              element.querySelector('.feed-post-link')?.attributes['href'] ??
-              '';
-          final img = element.querySelector('img')?.attributes['src'] ?? '';
-          return {
-            'titulo': titulo,
-            'link': link.startsWith('http') ? link : 'https:$link',
-            'imagem': img,
-          };
-        }).toList();
-      } else {
-        throw Exception('Falha ao carregar notícias GE');
-      }
-    } catch (e) {
-      print('Erro ao buscar notícias GE: $e');
-      return [];
-    }
-  }
-
-  /* Future<List<Map<String, String>>> _buscarNoticiasColunaDoFla() async {
-    try {
-      final response = await http.get(
-        Uri.parse('https://colunadofla.com/feed/'),
-      );
-      if (response.statusCode == 200) {
-        final document = XmlDocument.parse(response.body);
-        final items = document.findAllElements('item');
-        return items.map((item) {
-          final titulo = item.getElement('title')?.text ?? 'Sem título';
-          final link = item.getElement('link')?.text ?? '';
-          final descricaoBruta = item.getElement('description')?.text ?? '';
-          final imagem = extrairImagem(descricaoBruta) ?? '';
-          final descricaoSemHtml =
-              htmlParser.parse(descricaoBruta).body?.text ?? '';
-          return {
-            'titulo': titulo,
-            'link': link,
-            'descricao': descricaoSemHtml,
-            'imagem': imagem,
-          };
-        }).toList();
-      } else {
-        throw Exception('Erro ao buscar feed RSS do Coluna do Fla');
-      }
-    } catch (e) {
-      print('Erro ao buscar notícias Coluna do Fla: $e');
-      return [];
-    }
-  }*/
-
   @override
   Widget build(BuildContext context) {
-    final User? user = FirebaseAuth.instance.currentUser;
-    final String? photoURL = user?.photoURL;
-
-    final tabs = [
-      _buildNoticiasGE(),
-      NoticiasPage(noticiascoluna: noticiasColuna),
-      const PheliFlaYoutube(),
+    // 1. DEFINIÇÃO DAS ABAS NA ORDEM SOLICITADA
+    final List<Widget> _tabs = [
+      _buildNoticiasPheliFlaView(), // Índice 0
+      _buildNoticiasGEView(),       // Índice 1
+      NoticiasPage(noticiascoluna: noticiasColuna), // Índice 2
+      const PheliFlaYoutube(),      // Índice 3
     ];
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          _selectedIndex == 0
-              ? AppLocalizations.of(context)!.newsGeTitle
-              : _selectedIndex == 1
-              ? AppLocalizations.of(context)!.colunaTitle
-              : AppLocalizations.of(context)!.youtubeTitle,
-        ),
+        title: Text(_getAppBarTitle()),
         backgroundColor: Colors.red[800],
+        elevation: 0,
       ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(color: Colors.red[800]),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundImage:
-                        photoURL != null
-                            ? NetworkImage(photoURL)
-                            : const AssetImage('assets/images/Gaming.png')
-                                as ImageProvider,
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Olá, ${widget.nomeUsuario}',
-                    style: const TextStyle(color: Colors.white, fontSize: 18),
-                  ),
-                ],
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.home),
-              title: Text(AppLocalizations.of(context)!.home),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.chat),
-              title: Text(AppLocalizations.of(context)!.chat),
-              onTap: () {
-                Navigator.pushNamed(
-                  context,
-                  '/room-selection',
-                  arguments: widget.nomeUsuario,
-                );
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.sports_soccer),
-              title: Text(AppLocalizations.of(context)!.agendaTitle),
-              onTap: () {
-                Navigator.pop(context); // Fecha o drawer
-                /* if (widget.isPlusUser) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => AgendaRubroNegraPage()),
-                  );
-                } else {
-                  showDialog(
-                    context: context,
-                    builder:
-                        (context) => AlertDialog(
-                          title: const Text('Recurso exclusivo'),
-                          content: const Text(
-                            'A Agenda Rubro-Negra é um recurso exclusivo para assinantes Plus.',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              child: const Text('Cancelar'),
-                            ),
-                            ElevatedButton(
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                                // Aqui você pode redirecionar para a tela de assinatura Plus no futuro
-                                showDialog(
-                                  context: context,
-                                  builder:
-                                      (context) => AlertDialog(
-                                        title: const Text('Assinar Plus'),
-                                        content: const Text(
-                                          'Para acessar este recurso, é necessário assinar o plano Plus.',
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed:
-                                                () =>
-                                                    Navigator.of(context).pop(),
-                                            child: const Text('Fechar'),
-                                          ),
-                                          ElevatedButton(
-                                            onPressed: () {
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder:
-                                                      (_) =>
-                                                          const AssinaturaPlusScreen(),
-                                                ),
-                                              );
-                                            },
-                                            child: const Text('Assinar agora'),
-                                          ),
-                                        ],
-                                      ),
-                                );
-                              },
-                              child: const Text('Assinar Plus'),
-                            ),
-                          ],
-                        ),
-                  );
-                }
-              },
-            ),*/
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => AgendaRubroNegraPage()),
-                );
-              },
-            ),
-
-            ListTile(
-              leading: const Icon(Icons.shopping_cart),
-              title: Text(AppLocalizations.of(context)!.store),
-              onTap: () {
-                Navigator.pop(context); // Fecha o drawer
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const EscolhaLojaScreen()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings),
-              title: Text(AppLocalizations.of(context)!.settings),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (context) => SettingsScreen(
-                          isDarkMode: isDarkMode,
-                          onThemeChanged: toggleTheme,
-                        ),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.star, color: Colors.amber),
-              title: const Text('Assinar Agora'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const AssinaturaPlusScreen(),
-                  ),
-                );
-              },
-            ),
-
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: Text(AppLocalizations.of(context)!.logout),
-              onTap: () => _logout(context),
-            ),
-          ],
-        ),
+      drawer: _buildCustomDrawer(),
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _tabs,
       ),
-      body: tabs[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
         selectedItemColor: Colors.red[800],
+        unselectedItemColor: Colors.grey,
+        type: BottomNavigationBarType.fixed,
         items: [
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.stars),
+            label: "PheliFla",
+          ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.article),
+            icon: const Icon(Icons.article),
             label: AppLocalizations.of(context)!.bottomNavGe,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.chrome_reader_mode),
+            icon: const Icon(Icons.chrome_reader_mode),
             label: AppLocalizations.of(context)!.bottomNavColuna,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.video_collection),
+            icon: const Icon(Icons.video_collection),
             label: AppLocalizations.of(context)!.bottomNavYoutube,
           ),
         ],
@@ -331,84 +176,203 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildNoticiasGE() {
+  // TÍTULOS DINÂMICOS CONFORME A ABA
+  String _getAppBarTitle() {
+    switch (_selectedIndex) {
+      case 0: return "Coluna do PheliFla";
+      case 1: return AppLocalizations.of(context)!.newsGeTitle;
+      case 2: return AppLocalizations.of(context)!.colunaTitle;
+      case 3: return AppLocalizations.of(context)!.youtubeTitle;
+      default: return "PheliFla App";
+    }
+  }
+
+
+  // VIEW 1: FIRESTORE (SUAS NOTÍCIAS)
+Widget _buildNoticiasPheliFlaView() {
+  return FutureBuilder<List<Map<String, String>>>(
+    future: noticiasPheliFla,
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator(color: Colors.red));
+      }
+      if (!snapshot.hasData || snapshot.data!.isEmpty) {
+        return const Center(child: Text('Nenhuma notícia própria postada ainda.'));
+      }
+
+      return ListView.builder(
+        padding: const EdgeInsets.all(10),
+        itemCount: snapshot.data!.length,
+        itemBuilder: (context, index) {
+          final noticia = snapshot.data![index];
+          
+          // USAMOS O NOVO CARD QUE CRIAMOS ABAIXO
+          return PheliFlaCard(
+            titulo: noticia['titulo']!,
+            imagem: noticia['imagem']!,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => NoticiaDetalhePage(noticia: noticia),
+                ),
+              );
+            },
+          );
+        },
+      );
+    },
+  );
+}
+  // VIEW 2: GE
+  Widget _buildNoticiasGEView() {
     return FutureBuilder<List<Map<String, String>>>(
       future: noticiasGE,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        } else if (snapshot.hasError) {
-          return Center(
-            child: Text('Erro ao carregar notícias: ${snapshot.error}'),
-          );
-        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(child: Text('Sem notícias disponíveis.'));
-        } else {
-          return ListView(
-            padding: const EdgeInsets.only(top: 16, bottom: 80),
-            children:
-                snapshot.data!.map((noticia) {
-                  return NewsCard(
-                    titulo: noticia['titulo']!,
-                    imagem: noticia['imagem']!,
-                    link: noticia['link']!,
-                  );
-                }).toList(),
-          );
+          return const Center(child: CircularProgressIndicator(color: Colors.red));
         }
+        final lista = snapshot.data ?? [];
+        return ListView.builder(
+          padding: const EdgeInsets.all(10),
+          itemCount: lista.length,
+          itemBuilder: (context, index) {
+            final noticia = lista[index];
+            return NewsCard(
+              titulo: noticia['titulo']!,
+              imagem: noticia['imagem']!,
+              link: noticia['link']!,
+            );
+          },
+        );
       },
     );
   }
 
-  Widget _noticiaItem({
-    required String titulo,
-    required String imagem,
-    required String link,
-  }) {
-    return InkWell(
-      onTap: () async {
-        final uri = Uri.parse(link);
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-        }
-      },
-      borderRadius: BorderRadius.circular(16),
-      child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        margin: const EdgeInsets.only(bottom: 16),
-        clipBehavior: Clip.antiAlias,
+  // DRAWER (MENU LATERAL)
+  Widget _buildCustomDrawer() {
+    final User? user = FirebaseAuth.instance.currentUser;
+    return Drawer(
+      child: Column(
+        children: [
+          UserAccountsDrawerHeader(
+            decoration: BoxDecoration(color: Colors.red[800]),
+            currentAccountPicture: CircleAvatar(
+              backgroundColor: Colors.white,
+              backgroundImage: user?.photoURL != null
+                  ? NetworkImage(user!.photoURL!)
+                  : const AssetImage('assets/images/Gaming.png') as ImageProvider,
+            ),
+            accountName: Text(widget.nomeUsuario, style: const TextStyle(fontWeight: FontWeight.bold)),
+            accountEmail: Text(user?.email ?? ""),
+          ),
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.home),
+                  title: Text(AppLocalizations.of(context)!.home),
+                  onTap: () => Navigator.pop(context),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.chat),
+                  title: Text(AppLocalizations.of(context)!.chat),
+                  onTap: () => Navigator.pushNamed(context, '/room-selection', arguments: widget.nomeUsuario),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.sports_soccer),
+                  title: Text(AppLocalizations.of(context)!.agendaTitle),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => AgendaRubroNegraPage()));
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.shopping_cart),
+                  title: Text(AppLocalizations.of(context)!.store),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const EscolhaLojaScreen()));
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.star, color: Colors.amber),
+                  title: const Text('Assinar Agora'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AssinaturaPlusScreen()));
+                  },
+                ),
+                const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.settings),
+                  title: Text(AppLocalizations.of(context)!.settings),
+                  onTap: () {
+                     Navigator.push(context, MaterialPageRoute(builder:(context) => SettingsScreen(isDarkMode: isDarkMode, onThemeChanged: toggleTheme),));
+
+                    },
+                ),
+                const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.logout),
+                  title: Text(AppLocalizations.of(context)!.logout),
+                  onTap: () => _logout(context),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+}
+ class PheliFlaCard extends StatelessWidget {
+  final String titulo;
+  final String imagem;
+  final VoidCallback onTap;
+
+  const PheliFlaCard({
+    Key? key,
+    required this.titulo,
+    required this.imagem,
+    required this.onTap,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 15),
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      clipBehavior: Clip.antiAlias, // Corta a imagem nas bordas arredondadas
+      child: InkWell( // InkWell dá o efeito de clique (onda)
+        onTap: onTap,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Imagem do Card
             if (imagem.isNotEmpty)
-              Image.network(
-                imagem,
-                width: double.infinity,
+              CachedNetworkImage(
+                imageUrl: imagem,
                 height: 180,
+                width: double.infinity,
                 fit: BoxFit.cover,
+                placeholder: (context, url) => Container(color: Colors.grey[200]),
+                errorWidget: (context, url, error) => const Icon(Icons.broken_image),
               ),
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                color: Colors.black.withOpacity(0.6),
-                padding: const EdgeInsets.all(8),
-                child: Text(
-                  titulo,
-                  style: const TextStyle(color: Colors.white, fontSize: 16),
-                ),
-              ),
-            ),
+            // Título do Card
             Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(12.0),
               child: Text(
                 titulo,
                 style: const TextStyle(
                   fontSize: 16,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.bold,
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],

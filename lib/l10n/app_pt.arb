@@ -2,6 +2,7 @@
   "@@locale": "pt",
   "settings": "Configurações",
   "darkMode": "Modo escuro",
+  "notifications": "Notificações",
   "appVersion": "Versão do app",
   "username": "Nome do usuário",
   "updateName": "Atualizar nome",
@@ -56,5 +57,7 @@
   "ajudeProjeto": "Ajude a manter o projeto no ar",
   "assinarAgora": "Assinar agora",
   "termosAssinatura": "Termos e política de cancelamento",
-  "assinaturaEmBreve": "Sistema de assinatura disponível em breve"
+  "assinaturaEmBreve": "Sistema de assinatura disponível em breve",
+  "local_escolhaLoja": "Escolha sua loja"
+
 }

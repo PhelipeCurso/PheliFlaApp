@@ -104,6 +104,12 @@ abstract class AppLocalizations {
   /// **'Settings'**
   String get settings;
 
+  /// No description provided for @notifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notifications;
+
   /// No description provided for @darkMode.
   ///
   /// In en, this message translates to:
@@ -359,37 +365,37 @@ abstract class AppLocalizations {
   /// No description provided for @genderMale.
   ///
   /// In en, this message translates to:
-  /// **'Masculino'**
+  /// **'Male'**
   String get genderMale;
 
   /// No description provided for @genderFemale.
   ///
   /// In en, this message translates to:
-  /// **'Feminino'**
+  /// **'Female'**
   String get genderFemale;
 
   /// No description provided for @genderUnisex.
   ///
   /// In en, this message translates to:
-  /// **'Unissex'**
+  /// **'Unisex'**
   String get genderUnisex;
 
   /// No description provided for @typeChild.
   ///
   /// In en, this message translates to:
-  /// **'Infantil'**
+  /// **'Child'**
   String get typeChild;
 
   /// No description provided for @typeAdult.
   ///
   /// In en, this message translates to:
-  /// **'Adulto'**
+  /// **'Adult'**
   String get typeAdult;
 
   /// No description provided for @storeCode.
   ///
   /// In en, this message translates to:
-  /// **'Código da Loja'**
+  /// **'Store Code'**
   String get storeCode;
 
   /// No description provided for @assinaturaPlus.
@@ -451,6 +457,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Subscription system coming soon'**
   String get assinaturaEmBreve;
+
+  /// No description provided for @local_all.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get local_all;
+
+  /// No description provided for @local_categoryShirts.
+  ///
+  /// In en, this message translates to:
+  /// **'Shirts'**
+  String get local_categoryShirts;
+
+  /// No description provided for @local_categoryCaps.
+  ///
+  /// In en, this message translates to:
+  /// **'Caps'**
+  String get local_categoryCaps;
+
+  /// No description provided for @local_categoryAccessories.
+  ///
+  /// In en, this message translates to:
+  /// **'Accessories'**
+  String get local_categoryAccessories;
+
+  /// No description provided for @local_categoryMugs.
+  ///
+  /// In en, this message translates to:
+  /// **'Mugs'**
+  String get local_categoryMugs;
+
+  /// No description provided for @local_categoryCropped.
+  ///
+  /// In en, this message translates to:
+  /// **'Cropped'**
+  String get local_categoryCropped;
+
+  /// No description provided for @local_categoryBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Body'**
+  String get local_categoryBody;
+
+  /// No description provided for @local_categoryKit.
+  ///
+  /// In en, this message translates to:
+  /// **'Kit'**
+  String get local_categoryKit;
+
+  /// No description provided for @local_genderMale.
+  ///
+  /// In en, this message translates to:
+  /// **'Male'**
+  String get local_genderMale;
+
+  /// No description provided for @local_genderFemale.
+  ///
+  /// In en, this message translates to:
+  /// **'Female'**
+  String get local_genderFemale;
+
+  /// No description provided for @local_escolhaLoja.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your store'**
+  String get local_escolhaLoja;
 }
 
 class _AppLocalizationsDelegate
