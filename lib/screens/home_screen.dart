@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pheli_fla_app/config_screenTheme.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // IMPORTANTE
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' as htmlParser;
 import 'package:cached_network_image/cached_network_image.dart';
@@ -40,8 +40,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late bool isDarkMode;
   int _selectedIndex = 0;
-  
-  // Futures para as 4 abas
+
   late Future<List<Map<String, String>>> noticiasPheliFla;
   late Future<List<Map<String, String>>> noticiasGE;
   late Future<List<Map<String, String>>> noticiasColuna;
@@ -50,11 +49,19 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     isDarkMode = widget.isDarkMode;
-    
-    // Inicialização de todas as fontes de dados
     noticiasPheliFla = _buscarNoticiasPheliFla();
     noticiasGE = _buscarNoticiasGE();
     noticiasColuna = fetchColunaFlaRSS();
+  }
+
+  // --- FUNÇÃO PARA ABRIR O SITE DE INGRESSOS ---
+  Future<void> _abrirSiteIngressos() async {
+    final Uri url = Uri.parse(
+        'https://ingressos.flamengo.com.br/?utm_source=siteoficial&utm_medium=popup&utm_campaign=flaxremo&utm_term=_');
+
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      debugPrint('Não foi possível abrir o link: $url');
+    }
   }
 
   // --- BUSCA FIRESTORE (SUAS POSTAGENS) ---
@@ -69,7 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final data = doc.data();
         return {
           'titulo': data['titulo']?.toString() ?? 'Sem título',
-          'link': data['id']?.toString() ?? '', // Ou link externo se houver
+          'link': data['id']?.toString() ?? '',
           'imagem': data['imagemUrl']?.toString() ?? '',
           'conteudo': data['conteudo']?.toString() ?? '',
         };
@@ -79,14 +86,13 @@ class _HomeScreenState extends State<HomeScreen> {
       return [];
     }
   }
- 
 
   // --- BUSCA GE (SCRAPING) ---
   Future<List<Map<String, String>>> _buscarNoticiasGE() async {
     try {
       final response = await http.get(
         Uri.parse('https://ge.globo.com/futebol/times/flamengo/'),
-        headers: {"User-Agent": "Mozilla/5.0"}, 
+        headers: {"User-Agent": "Mozilla/5.0"},
       );
 
       if (response.statusCode == 200) {
@@ -129,12 +135,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 1. DEFINIÇÃO DAS ABAS NA ORDEM SOLICITADA
     final List<Widget> _tabs = [
-      _buildNoticiasPheliFlaView(), // Índice 0
-      _buildNoticiasGEView(),       // Índice 1
-      NoticiasPage(noticiascoluna: noticiasColuna), // Índice 2
-      const PheliFlaYoutube(),      // Índice 3
+      _buildNoticiasPheliFlaView(),
+      _buildNoticiasGEView(),
+      NoticiasPage(noticiascoluna: noticiasColuna),
+      const PheliFlaYoutube(),
     ];
 
     return Scaffold(
@@ -176,7 +181,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // TÍTULOS DINÂMICOS CONFORME A ABA
   String _getAppBarTitle() {
     switch (_selectedIndex) {
       case 0: return "Coluna do PheliFla";
@@ -187,44 +191,40 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Widget _buildNoticiasPheliFlaView() {
+    return FutureBuilder<List<Map<String, String>>>(
+      future: noticiasPheliFla,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator(color: Colors.red));
+        }
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(child: Text('Nenhuma notícia própria postada ainda.'));
+        }
 
-  // VIEW 1: FIRESTORE (SUAS NOTÍCIAS)
-Widget _buildNoticiasPheliFlaView() {
-  return FutureBuilder<List<Map<String, String>>>(
-    future: noticiasPheliFla,
-    builder: (context, snapshot) {
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return const Center(child: CircularProgressIndicator(color: Colors.red));
-      }
-      if (!snapshot.hasData || snapshot.data!.isEmpty) {
-        return const Center(child: Text('Nenhuma notícia própria postada ainda.'));
-      }
+        return ListView.builder(
+          padding: const EdgeInsets.all(10),
+          itemCount: snapshot.data!.length,
+          itemBuilder: (context, index) {
+            final noticia = snapshot.data![index];
+            return PheliFlaCard(
+              titulo: noticia['titulo']!,
+              imagem: noticia['imagem']!,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => NoticiaDetalhePage(noticia: noticia),
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
 
-      return ListView.builder(
-        padding: const EdgeInsets.all(10),
-        itemCount: snapshot.data!.length,
-        itemBuilder: (context, index) {
-          final noticia = snapshot.data![index];
-          
-          // USAMOS O NOVO CARD QUE CRIAMOS ABAIXO
-          return PheliFlaCard(
-            titulo: noticia['titulo']!,
-            imagem: noticia['imagem']!,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => NoticiaDetalhePage(noticia: noticia),
-                ),
-              );
-            },
-          );
-        },
-      );
-    },
-  );
-}
-  // VIEW 2: GE
   Widget _buildNoticiasGEView() {
     return FutureBuilder<List<Map<String, String>>>(
       future: noticiasGE,
@@ -249,7 +249,7 @@ Widget _buildNoticiasPheliFlaView() {
     );
   }
 
-  // DRAWER (MENU LATERAL)
+  // --- DRAWER (MENU LATERAL) ---
   Widget _buildCustomDrawer() {
     final User? user = FirebaseAuth.instance.currentUser;
     return Drawer(
@@ -296,6 +296,18 @@ Widget _buildNoticiasPheliFlaView() {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const EscolhaLojaScreen()));
                   },
                 ),
+                
+                // --- ITEM AJUSTADO: INGRESSOS ABAIXO DA LOJA ---
+                ListTile(
+                  leading: const Icon(Icons.confirmation_number, color: Colors.red),
+                  title: const Text('Ingressos'),
+                  subtitle: const Text('Compre ingressos para os jogos'),
+                  onTap: () {
+                    Navigator.pop(context); // Fecha o Drawer
+                    _abrirSiteIngressos(); // Abre o site
+                  },
+                ),
+
                 ListTile(
                   leading: const Icon(Icons.star, color: Colors.amber),
                   title: const Text('Assinar Agora'),
@@ -309,9 +321,16 @@ Widget _buildNoticiasPheliFlaView() {
                   leading: const Icon(Icons.settings),
                   title: Text(AppLocalizations.of(context)!.settings),
                   onTap: () {
-                     Navigator.push(context, MaterialPageRoute(builder:(context) => SettingsScreen(isDarkMode: isDarkMode, onThemeChanged: toggleTheme),));
-
-                    },
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SettingsScreen(
+                          isDarkMode: isDarkMode,
+                          onThemeChanged: toggleTheme,
+                        ),
+                      ),
+                    );
+                  },
                 ),
                 const Divider(),
                 ListTile(
@@ -326,9 +345,10 @@ Widget _buildNoticiasPheliFlaView() {
       ),
     );
   }
-  
 }
- class PheliFlaCard extends StatelessWidget {
+
+// --- CARD PERSONALIZADO PHELIFLA ---
+class PheliFlaCard extends StatelessWidget {
   final String titulo;
   final String imagem;
   final VoidCallback onTap;
@@ -346,13 +366,12 @@ Widget _buildNoticiasPheliFlaView() {
       margin: const EdgeInsets.only(bottom: 15),
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      clipBehavior: Clip.antiAlias, // Corta a imagem nas bordas arredondadas
-      child: InkWell( // InkWell dá o efeito de clique (onda)
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
         onTap: onTap,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Imagem do Card
             if (imagem.isNotEmpty)
               CachedNetworkImage(
                 imageUrl: imagem,
@@ -362,7 +381,6 @@ Widget _buildNoticiasPheliFlaView() {
                 placeholder: (context, url) => Container(color: Colors.grey[200]),
                 errorWidget: (context, url, error) => const Icon(Icons.broken_image),
               ),
-            // Título do Card
             Padding(
               padding: const EdgeInsets.all(12.0),
               child: Text(

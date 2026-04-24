@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'brasileirao_page.dart';
-import 'libertadores_page.dart';
-import 'copa_do_brasil_page.dart';
-import 'super_mundial_page.dart';
+import 'package:pheli_fla_app/widgets/competition_list_widget.dart'; // O novo widget genérico
 
 class AgendaRubroNegraPage extends StatefulWidget {
   @override
@@ -13,11 +10,12 @@ class AgendaRubroNegraPage extends StatefulWidget {
 class _AgendaRubroNegraPageState extends State<AgendaRubroNegraPage> {
   int _selectedIndex = 0;
 
+  // Lista simplificada usando o widget genérico com os filtros exatos
   final List<Widget> _pages = [
-    BrasileiraoPage(),
-    LibertadoresPage(),
-    CopaDoBrasilPage(),
-    SuperMundialPage(),
+    CompetitionListWidget(competicao: 'brasileirao'),
+    CompetitionListWidget(competicao: 'libertadores'),
+    CompetitionListWidget(competicao: 'copa do brasil'),
+    CompetitionListWidget(competicao: 'super mundial'),
   ];
 
   @override
@@ -26,12 +24,17 @@ class _AgendaRubroNegraPageState extends State<AgendaRubroNegraPage> {
       appBar: AppBar(
         title: Text('Agenda Rubro-Negra'),
         backgroundColor: Colors.red[800],
+        elevation: 0,
       ),
-      body: _pages[_selectedIndex],
+      body: IndexedStack( // IndexedStack mantém o estado das abas ao alternar
+        index: _selectedIndex,
+        children: _pages,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
         selectedItemColor: Colors.red[800],
+        unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(

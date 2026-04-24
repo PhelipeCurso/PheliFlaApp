@@ -1,38 +1,53 @@
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import '../models/game.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/game.dart'; // Certifique-se de que o caminho para o seu modelo está correto
 
 class GamesService {
-  static const String _baseDomain = 'projetoapi-production-a6f9.up.railway.app';
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  /// Busca jogos com filtro opcional por competição.
-  static Future<List<Game>> fetchGames({String? competicao}) async {
-    Uri uri = Uri.https(_baseDomain, '/jogos');
+  /// Busca os jogos filtrados por uma competição específica (ex: 'brasileirao')
+  Stream<List<Game>> getGamesByCompetition(String competicao) {
+    return _db
+        .collection('jogos')
+        .where('competicao', isEqualTo: competicao)
+        .orderBy('data', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => Game.fromFirestore(doc.data(), doc.id))
+            .toList());
+  }
 
-    if (competicao != null && competicao.isNotEmpty) {
-      uri = uri.replace(queryParameters: {'competicao': competicao});
-    }
+  /// Busca todos os jogos cadastrados no banco de dados, independente da competição
+  Stream<List<Game>> getAllGames() {
+    return _db
+        .collection('jogos')
+        .orderBy('data', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => Game.fromFirestore(doc.data(), doc.id))
+            .toList());
+  }
 
-    try {
-      final response = await http.get(
-        uri,
-        headers: {'Accept': 'application/json'},
-      );
+  /// Busca apenas os jogos que já foram concluídos (para uma aba de "Resultados")
+  Stream<List<Game>> getCompletedGames() {
+    return _db
+        .collection('jogos')
+        .where('concluido', isEqualTo: true)
+        .orderBy('data', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => Game.fromFirestore(doc.data(), doc.id))
+            .toList());
+  }
 
-      print('🔗 URL chamada: $uri');
-      print('📦 Status code: ${response.statusCode}');
-      print('📏 Tamanho do body: ${response.body.length}');
-      print('📝 Resposta bruta: ${response.body}');
-
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return data.map((json) => Game.fromJson(json)).toList();
-      } else {
-        throw Exception('Erro ${response.statusCode}: ${response.body}');
-      }
-    } catch (e) {
-      print('❌ Erro ao buscar jogos: $e');
-      return [];
-    }
+  /// Busca apenas os jogos futuros (para uma aba de "Calendário" ou "Próximos Jogos")
+  Stream<List<Game>> getUpcomingGames() {
+    return _db
+        .collection('jogos')
+        .where('concluido', isEqualTo: false)
+        .orderBy('data', descending: false) // Ordem crescente para mostrar o mais próximo primeiro
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => Game.fromFirestore(doc.data(), doc.id))
+            .toList());
   }
 }
