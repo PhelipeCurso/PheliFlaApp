@@ -34,9 +34,15 @@ class _AgendaRubroNegraPageState extends State<AgendaRubroNegraPage> {
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
         selectedItemColor: Colors.red[800],
-        unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed,
-        items: const [
+       // MUDANÇA: Garante que o não selecionado mude conforme o tema
+      unselectedItemColor: Theme.of(context).brightness == Brightness.dark 
+        ? Colors.white54 
+        : Colors.grey[600],
+     backgroundColor: Theme.of(context).brightness == Brightness.dark 
+      ? Color(0xFF1E1E1E) // Cor de fundo para modo escuro
+      : Colors.white,      // Cor de fundo para modo claro
+     type: BottomNavigationBarType.fixed,
+     items: const [
           BottomNavigationBarItem(
             icon: FaIcon(FontAwesomeIcons.trophy),
             label: 'Brasileirão',

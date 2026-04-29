@@ -225,4 +225,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get local_escolhaLoja => 'Choose your store';
+
+  @override
+  String get welcome => 'Welcome!';
+
+  @override
+  String get email => 'E-mail';
+
+  @override
+  String get login => 'Login!';
 }

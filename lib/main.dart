@@ -1,5 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:pheli_fla_app/widgets/prefs_service.dart';
 import 'firebase_options.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
@@ -18,7 +20,6 @@ import 'providers/user_plus_provider.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'services/service_notifications.dart'; 
 
-// Handler para mensagens em segundo plano
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -28,88 +29,97 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   
-  // Solicita permissão e configura o handler de background
+  // Permissões e Handler de Background
   await FirebaseMessaging.instance.requestPermission();
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  String? token = await FirebaseMessaging.instance.getToken();
-  print("========================================");
-  print("MEU TOKEN DE DISPOSITIVO:");
-  print(token); // Copie este código que aparecerá no seu console (Debug Console)
-  print("========================================");
-
-  // 3. Configura o handler de segundo plano
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-
-
-  // Inicializa o serviço que agora também inscreve nos tópicos
+  // Inicializa serviço de notificações
   await NotificationService.init(); 
 
-  runApp(const FlamengoChatApp());
+  // Busca as preferências persistidas
+  bool isDark = await PrefsService.getTheme();
+  String lang = await PrefsService.getLanguage();
+
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => LocaleProvider()..setLocale(Locale(lang))),
+        ChangeNotifierProvider(create: (_) => UserPlusProvider()),
+      ],
+      child: MyApp(isDark: isDark),
+    ),
+  );
 }
 
-class FlamengoChatApp extends StatefulWidget {
-  const FlamengoChatApp({super.key});
+class MyApp extends StatefulWidget {
+  final bool isDark;
+  const MyApp({super.key, required this.isDark});
 
   @override
-  State<FlamengoChatApp> createState() => _FlamengoChatAppState();
+  State<MyApp> createState() => _MyAppState();
+
+  // Método estático para encontrar o estado do MyApp em qualquer lugar (útil para trocar tema)
+  static _MyAppState? of(BuildContext context) => context.findAncestorStateOfType<_MyAppState>();
 }
 
-class _FlamengoChatAppState extends State<FlamengoChatApp> {
-  bool isDarkMode = false;
+class _MyAppState extends State<MyApp> {
+  late ThemeMode _themeMode;
 
   @override
   void initState() {
     super.initState();
+    _themeMode = widget.isDark ? ThemeMode.dark : ThemeMode.light;
+    _setupFCM();
+  }
 
-    // Ouvindo mensagens com o APP ABERTO
+  void _setupFCM() {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       if (message.notification != null) {
+        final senderId = message.data['senderId'];
+        final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+        if (senderId != null && senderId == currentUserId) return;
+
         NotificationService.showNotification(
-          message.notification!.title ?? 'PheliFla Avisa:',
+          message.notification!.title ?? 'PheliFla News',
           message.notification!.body ?? '',
         );
       }
     });
   }
 
-  void toggleTheme(bool value) {
-    setState(() => isDarkMode = value);
+  // Função para alternar o tema e salvar
+  void toggleTheme(bool isDark) {
+    setState(() {
+      _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+    });
+    PrefsService.saveTheme(isDark);
   }
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => LocaleProvider()),
-        ChangeNotifierProvider(create: (_) => UserPlusProvider()),
-      ],
-      child: Consumer<LocaleProvider>(
-        builder: (context, localeProvider, child) {
-          return MaterialApp(
-            locale: localeProvider.locale,
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: AppLocalizations.supportedLocales,
-            title: 'Flamengo Chat',
-            debugShowCheckedModeBanner: false,
-            theme: _buildTheme(Brightness.light),
-            darkTheme: _buildTheme(Brightness.dark),
-            themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
-            initialRoute: '/login',
-            routes: _buildRoutes(),
-          );
-        },
-      ),
+    return Consumer<LocaleProvider>(
+      builder: (context, localeProvider, child) {
+        return MaterialApp(
+          locale: localeProvider.locale,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          title: 'Flamengo Chat',
+          debugShowCheckedModeBanner: false,
+          theme: _buildTheme(Brightness.light),
+          darkTheme: _buildTheme(Brightness.dark),
+          themeMode: _themeMode,
+          initialRoute: '/login',
+          routes: _buildRoutes(),
+        );
+      },
     );
   }
 
-  // Organização das Rotas
   Map<String, WidgetBuilder> _buildRoutes() {
     return {
       '/login': (context) => const LoginScreen(),
@@ -121,14 +131,15 @@ class _FlamengoChatAppState extends State<FlamengoChatApp> {
         return LojaScreen(Loja: loja);
       },
       '/home_screen': (context) {
-        final nomeUsuario = ModalRoute.of(context)!.settings.arguments as String;
+        final args = ModalRoute.of(context)!.settings.arguments;
+        final nomeUsuario = args is String ? args : "Usuário";
+        
         return Consumer<UserPlusProvider>(
           builder: (context, plusProvider, _) {
-            // Verifica status Plus ao entrar
             plusProvider.checkPlusStatus();
             return HomeScreen(
               nomeUsuario: nomeUsuario,
-              isDarkMode: isDarkMode,
+              isDarkMode: _themeMode == ThemeMode.dark,
               onThemeChanged: toggleTheme,
               isPlusUser: plusProvider.isPlus,
             );
@@ -143,7 +154,9 @@ class _FlamengoChatAppState extends State<FlamengoChatApp> {
       fontFamily: 'Raleway',
       brightness: brightness,
       primaryColor: Colors.red[900],
-      scaffoldBackgroundColor: brightness == Brightness.dark ? Colors.black : Colors.white,
+      // No Dark Mode o cardColor é cinza escuro, no Light é branco.
+      cardColor: brightness == Brightness.dark ? const Color(0xFF1E1E1E) : Colors.white,
+      scaffoldBackgroundColor: brightness == Brightness.dark ? Colors.black : const Color(0xFFF5F5F5),
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.red[900],
         foregroundColor: Colors.white,

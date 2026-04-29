@@ -54,6 +54,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'email': _emailController.text.trim(),
         'dataCadastro': FieldValue.serverTimestamp(),
         'status': 'ativo',
+        'isOnline': true,
       });
 
       if (!mounted) return;

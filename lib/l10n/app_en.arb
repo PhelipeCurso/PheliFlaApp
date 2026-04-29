@@ -70,6 +70,8 @@
   "local_categoryKit": "Kit",
   "local_genderMale": "Male",
   "local_genderFemale": "Female",
-  "local_escolhaLoja": "Choose your store"
-
+  "local_escolhaLoja": "Choose your store",
+  "welcome": "Welcome!",
+  "email": "E-mail",
+  "login": "Login!"
 }

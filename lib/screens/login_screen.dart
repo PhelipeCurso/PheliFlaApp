@@ -34,7 +34,6 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // Segurança: Salva apenas o e-mail, nunca a senha.
   Future<void> _carregarPreferencias() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -58,7 +57,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => _isLoading = true);
 
     try {
@@ -69,10 +67,7 @@ class _LoginScreenState extends State<LoginScreen> {
           );
 
       final uid = userCredential.user!.uid;
-      
-      // Busca dados adicionais
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection('usuarios').doc(uid).get();
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('usuarios').doc(uid).get();
 
       if (!userDoc.exists) throw "Usuário não registrado no banco de dados.";
 
@@ -82,7 +77,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home_screen', arguments: nomeUsuario);
-      
     } on FirebaseAuthException catch (e) {
       _mostrarMensagem(e.message ?? "Erro ao autenticar.");
     } catch (e) {
@@ -110,7 +104,6 @@ class _LoginScreenState extends State<LoginScreen> {
       UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
       final uid = userCredential.user!.uid;
 
-      // Verifica ou cria perfil no Firestore
       final userDocRef = FirebaseFirestore.instance.collection('usuarios').doc(uid);
       final doc = await userDocRef.get();
 
@@ -124,7 +117,6 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       await _salvarTokenENotificacoes(uid, nome);
-
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home_screen', arguments: nome);
     } catch (e) {
@@ -139,6 +131,7 @@ class _LoginScreenState extends State<LoginScreen> {
     await FirebaseFirestore.instance.collection('usuarios').doc(uid).set({
       'fcmToken': token,
       'nomeUsuario': nomeUsuario,
+      'isOnline': true,
       'ultimaAtividade': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }
@@ -151,14 +144,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       body: Stack(
         children: [
-          // Background
           Positioned.fill(
             child: Image.asset('assets/images/PheliFlafundo.png', fit: BoxFit.cover),
           ),
-          Container(color: Colors.black.withOpacity(0.6)),
+          Container(color: Colors.black.withOpacity(isDark ? 0.50 : 0.50)),
 
           Center(
             child: SingleChildScrollView(
@@ -166,8 +160,11 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Container(
                 padding: const EdgeInsets.all(25),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9),
+                  color: isDark ? const Color(0xFF1A1A1A).withOpacity(0.75) : Colors.white.withOpacity(0.75),
                   borderRadius: BorderRadius.circular(25),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black45, blurRadius: 15, offset: const Offset(5, 5)),
+                  ],
                 ),
                 child: Form(
                   key: _formKey,
@@ -179,14 +176,15 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: Colors.red[900],
+                          color: isDark ? Colors.redAccent : Colors.red[900],
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 25),
                       
                       TextFormField(
                         controller: _emailController,
-                        decoration: _inputStyle("E-mail", Icons.email),
+                        style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                        decoration: _inputStyle("E-mail", Icons.email, isDark),
                         keyboardType: TextInputType.emailAddress,
                         validator: (value) => value!.contains('@') ? null : "E-mail inválido",
                       ),
@@ -196,9 +194,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextFormField(
                         controller: _senhaController,
                         obscureText: !_mostrarSenha,
-                        decoration: _inputStyle("Senha", Icons.lock).copyWith(
+                        style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                        decoration: _inputStyle("Senha", Icons.lock, isDark).copyWith(
                           suffixIcon: IconButton(
-                            icon: Icon(_mostrarSenha ? Icons.visibility : Icons.visibility_off),
+                            icon: Icon(
+                              _mostrarSenha ? Icons.visibility : Icons.visibility_off,
+                              color: isDark ? Colors.white70 : Colors.black54,
+                            ),
                             onPressed: () => setState(() => _mostrarSenha = !_mostrarSenha),
                           ),
                         ),
@@ -210,58 +212,85 @@ class _LoginScreenState extends State<LoginScreen> {
                           Checkbox(
                             value: _lembrarLogin,
                             activeColor: Colors.red[900],
+                            checkColor: Colors.white,
+                            side: BorderSide(color: isDark ? Colors.white70 : Colors.black54),
                             onChanged: (v) => setState(() => _lembrarLogin = v!),
                           ),
-                          const Text("Lembrar e-mail"),
+                          Text(
+                            "Lembrar e-mail",
+                            style: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
+                          ),
                           const Spacer(),
                           TextButton(
-                            onPressed: () {}, // Adicionar recuperação de senha aqui
-                            child: const Text("Esqueceu a senha?", style: TextStyle(fontSize: 12)),
+                            onPressed: () {},
+                            child: Text(
+                              "Esqueceu a senha?",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isDark ? Colors.blueAccent : Colors.blue[800],
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ],
                       ),
 
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 15),
 
                       ElevatedButton(
                         onPressed: _isLoading ? null : _login,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.red[800],
+                          foregroundColor: Colors.white,
                           minimumSize: const Size(double.infinity, 55),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                          elevation: 5,
                         ),
                         child: _isLoading 
-                          ? const CircularProgressIndicator(color: Colors.white) 
-                          : const Text("ENTRAR", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) 
+                          : const Text("ENTRAR", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                       ),
 
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 25),
 
                       Row(
-                        children: const [
-                          Expanded(child: Divider()),
-                          Padding(padding: EdgeInsets.symmetric(horizontal: 10), child: Text("ou")),
-                          Expanded(child: Divider()),
+                        children: [
+                          Expanded(child: Divider(color: isDark ? Colors.white24 : Colors.black26)),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            child: Text("ou", style: TextStyle(color: isDark ? Colors.white60 : Colors.black54)),
+                          ),
+                          Expanded(child: Divider(color: isDark ? Colors.white24 : Colors.black26)),
                         ],
                       ),
 
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 25),
 
                       OutlinedButton.icon(
                         onPressed: _isLoading ? null : _loginWithGoogle,
-                        icon: const Icon(Icons.g_mobiledata, size: 30),
-                        label: const Text("Entrar com Google"),
+                        icon: Icon(Icons.g_mobiledata, size: 30, color: isDark ? Colors.white : Colors.black87),
+                        label: Text(
+                          "Entrar com Google",
+                          style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.w600),
+                        ),
                         style: OutlinedButton.styleFrom(
                           minimumSize: const Size(double.infinity, 50),
+                          side: BorderSide(color: isDark ? Colors.white38 : Colors.black26),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                         ),
                       ),
 
-                      const SizedBox(height: 15),
+                      const SizedBox(height: 20),
 
                       TextButton(
                         onPressed: () => Navigator.pushNamed(context, '/register'),
-                        child: const Text("Não tem conta? Cadastre-se", style: TextStyle(color: Colors.red)),
+                        child: Text(
+                          "Não tem conta? Cadastre-se",
+                          style: TextStyle(
+                            color: isDark ? Colors.redAccent : Colors.red[900],
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -274,11 +303,27 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  InputDecoration _inputStyle(String label, IconData icon) {
+  // MÉTODO DE ESTILO ÚNICO E CORRIGIDO
+  InputDecoration _inputStyle(String label, IconData icon, bool isDark) {
+    final Color contentColor = isDark ? Colors.white70 : Colors.black54;
+    final Color primaryColor = isDark ? Colors.redAccent : Colors.red[900]!;
+
     return InputDecoration(
       labelText: label,
-      prefixIcon: Icon(icon),
+      labelStyle: TextStyle(color: contentColor),
+      floatingLabelStyle: TextStyle(color: primaryColor),
+      prefixIcon: Icon(icon, color: primaryColor),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(15),
+        borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.black12),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(15),
+        borderSide: BorderSide(color: primaryColor, width: 2),
+      ),
+      filled: true,
+      fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
     );
   }
 }

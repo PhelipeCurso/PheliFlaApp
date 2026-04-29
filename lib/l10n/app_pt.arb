@@ -58,6 +58,9 @@
   "assinarAgora": "Assinar agora",
   "termosAssinatura": "Termos e política de cancelamento",
   "assinaturaEmBreve": "Sistema de assinatura disponível em breve",
-  "local_escolhaLoja": "Escolha sua loja"
+  "local_escolhaLoja": "Escolha sua loja",
+  "welcome": "Bem-vindo!",
+  "email": "E-mail",
+  "login": "ENTRAR"
 
 }

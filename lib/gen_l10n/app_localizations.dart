@@ -523,6 +523,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Choose your store'**
   String get local_escolhaLoja;
+
+  /// No description provided for @welcome.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome!'**
+  String get welcome;
+
+  /// No description provided for @email.
+  ///
+  /// In en, this message translates to:
+  /// **'E-mail'**
+  String get email;
+
+  /// No description provided for @login.
+  ///
+  /// In en, this message translates to:
+  /// **'Login!'**
+  String get login;
 }
 
 class _AppLocalizationsDelegate

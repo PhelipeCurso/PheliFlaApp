@@ -127,11 +127,34 @@ class _HomeScreenState extends State<HomeScreen> {
     widget.onThemeChanged(value);
   }
 
-  void _logout(BuildContext context) async {
+void _logout(BuildContext context) async {
+  try {
+    // 1. Pega o UID do usuário atual
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user != null) {
+      // 2. Avisa ao Firestore que ele está saindo
+      await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(user.uid)
+          .update({'isOnline': false});
+    }
+
+    // 3. Agora sim, faz o logout do Firebase Auth
     await FirebaseAuth.instance.signOut();
+
     if (!mounted) return;
+
+    // 4. Redireciona para o login limpando a pilha de telas
+    Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
+    
+  } catch (e) {
+    print("Erro ao sair: $e");
+    // Mesmo se der erro no update, forçamos o deslogue para não travar o usuário
+    await FirebaseAuth.instance.signOut();
     Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -183,7 +206,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String _getAppBarTitle() {
     switch (_selectedIndex) {
-      case 0: return "Coluna do PheliFla";
+      case 0: return "PheliFla News";
       case 1: return AppLocalizations.of(context)!.newsGeTitle;
       case 2: return AppLocalizations.of(context)!.colunaTitle;
       case 3: return AppLocalizations.of(context)!.youtubeTitle;

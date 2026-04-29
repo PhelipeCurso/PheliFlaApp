@@ -176,7 +176,7 @@ class _LojaScreenState extends State<LojaScreen> {
               selectedColor: Colors.red[100],
               checkmarkColor: Colors.red[900],
               labelStyle: TextStyle(
-                color: isSelected ? Colors.red[900] : Colors.black87,
+                color: isSelected ? Colors.red[900] : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black87),
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
@@ -222,7 +222,7 @@ class _ProductCard extends StatelessWidget {
       onTap: item.url.isNotEmpty ? onTap : null,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(18),
           boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
         ),

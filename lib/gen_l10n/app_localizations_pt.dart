@@ -225,4 +225,13 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get local_escolhaLoja => 'Escolha sua loja';
+
+  @override
+  String get welcome => 'Bem-vindo!';
+
+  @override
+  String get email => 'E-mail';
+
+  @override
+  String get login => 'ENTRAR';
 }

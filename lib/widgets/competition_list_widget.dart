@@ -5,7 +5,8 @@ import '../services/games_service.dart';
 class CompetitionListWidget extends StatefulWidget {
   final String competicao;
 
-  const CompetitionListWidget({Key? key, required this.competicao}) : super(key: key);
+  const CompetitionListWidget({Key? key, required this.competicao})
+    : super(key: key);
 
   @override
   _CompetitionListWidgetState createState() => _CompetitionListWidgetState();
@@ -28,31 +29,48 @@ class _CompetitionListWidgetState extends State<CompetitionListWidget> {
                 return Center(child: Text("Erro ao carregar jogos."));
               }
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(child: CircularProgressIndicator(color: Colors.red[800]));
+                return Center(
+                  child: CircularProgressIndicator(color: Colors.red[800]),
+                );
               }
 
               final allGames = snapshot.data ?? [];
               final now = DateTime.now();
 
               // Fazemos o filtro de data localmente com os dados que chegaram do Firebase
-              final filteredGames = allGames.where((g) {
-                try {
-                  final gameDate = DateTime.parse(g.data);
-                  final isSameDay = gameDate.day == now.day &&
-                                    gameDate.month == now.month &&
-                                    gameDate.year == now.year;
+              final filteredGames =
+                  allGames.where((g) {
+                    try {
+                      final gameDate = DateTime.parse(g.data);
+                      final isSameDay =
+                          gameDate.day == now.day &&
+                          gameDate.month == now.month &&
+                          gameDate.year == now.year;
 
-                  if (selectedFilter == 'today') {
-                    return isSameDay;
-                  } else if (selectedFilter == 'future') {
-                    return gameDate.isAfter(now) && !isSameDay;
-                  } else {
-                    return gameDate.isBefore(now) && !isSameDay;
-                  }
-                } catch (e) {
-                  return false;
+                      if (selectedFilter == 'today') {
+                        return isSameDay;
+                      } else if (selectedFilter == 'future') {
+                        return gameDate.isAfter(now) && !isSameDay;
+                      } else {
+                        return gameDate.isBefore(now) && !isSameDay;
+                      }
+                    } catch (e) {
+                      return false;
+                    }
+                  }).toList();
+              // 2. ORDENAÇÃO DINÂMICA (A parte que você precisa adicionar)
+              filteredGames.sort((a, b) {
+                DateTime dateA = DateTime.tryParse(a.data) ?? DateTime(2000);
+                DateTime dateB = DateTime.tryParse(b.data) ?? DateTime(2000);
+
+                if (selectedFilter == 'future' || selectedFilter == 'today') {
+                  // Para o futuro, queremos o mais próximo primeiro (Crescente: 10/05, 15/05, 20/05)
+                  return dateA.compareTo(dateB);
+                } else {
+                  // Para o passado, queremos o último que aconteceu no topo (Decrescente: 05/05, 01/05, 20/04)
+                  return dateB.compareTo(dateA);
                 }
-              }).toList();
+              });
 
               if (filteredGames.isEmpty) {
                 return Center(child: Text("Nenhum jogo nesta categoria."));
@@ -61,7 +79,8 @@ class _CompetitionListWidgetState extends State<CompetitionListWidget> {
               return ListView.builder(
                 padding: EdgeInsets.all(12),
                 itemCount: filteredGames.length,
-                itemBuilder: (context, index) => _buildGameCard(filteredGames[index]),
+                itemBuilder:
+                    (context, index) => _buildGameCard(filteredGames[index]),
               );
             },
           ),
@@ -73,7 +92,11 @@ class _CompetitionListWidgetState extends State<CompetitionListWidget> {
   Widget _buildFilterButtons() {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 8),
-      color: Colors.grey[100],
+      // Usa a cor do tema, adaptando-se automaticamente
+      color:
+          Theme.of(context).brightness == Brightness.dark
+              ? Colors.black26
+              : Colors.grey[100],
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
@@ -97,15 +120,23 @@ class _CompetitionListWidgetState extends State<CompetitionListWidget> {
         });
       },
       selectedColor: Colors.red[800],
-      labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black),
+      labelStyle: TextStyle(
+        color:
+            isSelected
+                ? Colors.white
+                : (Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white70
+                    : Colors.black87),
+      ),
     );
   }
 
   Widget _buildGameCard(Game game) {
     // Nova lógica para exibir o placar baseado nos campos do Firebase
-    String placarExibicao = game.concluido 
-        ? '${game.golsFlamengo} - ${game.golsAdversario}' 
-        : ' - ';
+    String placarExibicao =
+        game.concluido
+            ? '${game.golsFlamengo} - ${game.golsAdversario}'
+            : ' - ';
 
     return Card(
       elevation: 3,
@@ -115,8 +146,12 @@ class _CompetitionListWidgetState extends State<CompetitionListWidget> {
         padding: EdgeInsets.all(16),
         child: Column(
           children: [
-            Text(game.etapa, 
-              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey[600])
+            Text(
+              game.etapa,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[600],
+              ),
             ),
             SizedBox(height: 12),
             Row(
@@ -126,8 +161,11 @@ class _CompetitionListWidgetState extends State<CompetitionListWidget> {
                 Column(
                   children: [
                     Text(
-                      placarExibicao, 
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      placarExibicao,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     Text(game.hora, style: TextStyle(color: Colors.grey)),
                   ],
@@ -142,13 +180,14 @@ class _CompetitionListWidgetState extends State<CompetitionListWidget> {
                 Icon(Icons.location_on, size: 16, color: Colors.red[800]),
                 SizedBox(width: 4),
                 Flexible(
-                  child: Text(game.local, 
+                  child: Text(
+                    game.local,
                     style: TextStyle(fontSize: 12),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
-            )
+            ),
           ],
         ),
       ),
@@ -161,14 +200,14 @@ class _CompetitionListWidgetState extends State<CompetitionListWidget> {
       child: Column(
         children: [
           Image.network(
-            shield, 
-            width: 50, 
-            height: 50, 
-            errorBuilder: (_, __, ___) => Icon(Icons.shield, size: 50)
+            shield,
+            width: 50,
+            height: 50,
+            errorBuilder: (_, __, ___) => Icon(Icons.shield, size: 50),
           ),
           SizedBox(height: 4),
           Text(
-            name, 
+            name,
             style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
             textAlign: TextAlign.center,
             overflow: TextOverflow.ellipsis,
