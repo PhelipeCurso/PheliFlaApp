@@ -323,8 +323,8 @@ void _logout(BuildContext context) async {
                 // --- ITEM AJUSTADO: INGRESSOS ABAIXO DA LOJA ---
                 ListTile(
                   leading: const Icon(Icons.confirmation_number, color: Colors.red),
-                  title: const Text('Ingressos'),
-                  subtitle: const Text('Compre ingressos para os jogos'),
+                  title: Text(AppLocalizations.of(context)!.ticket),
+                  subtitle:  Text(AppLocalizations.of(context)!.buyTicketsForTheGames),
                   onTap: () {
                     Navigator.pop(context); // Fecha o Drawer
                     _abrirSiteIngressos(); // Abre o site
@@ -333,7 +333,7 @@ void _logout(BuildContext context) async {
 
                 ListTile(
                   leading: const Icon(Icons.star, color: Colors.amber),
-                  title: const Text('Assinar Agora'),
+                  title:  Text(AppLocalizations.of(context)!.subscribeNow),
                   onTap: () {
                     Navigator.pop(context);
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AssinaturaPlusScreen()));

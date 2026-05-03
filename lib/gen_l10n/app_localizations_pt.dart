@@ -234,4 +234,31 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get login => 'ENTRAR';
+
+  @override
+  String get rememberEmail => 'Lembre-se email';
+
+  @override
+  String get forgotYourPassword => 'Esqueceu sua senha?';
+
+  @override
+  String get dontHaveAnAccountSignUp => 'Não tem uma conta? Cadastre-se';
+
+  @override
+  String get signInWithGoogle => 'Entrar com Google';
+
+  @override
+  String get oR => 'or';
+
+  @override
+  String get password => 'Senha';
+
+  @override
+  String get ticket => 'Ingresso';
+
+  @override
+  String get buyTicketsForTheGames => 'Compre ingressos para os jogos!';
+
+  @override
+  String get subscribeNow => 'Assinar agora!';
 }

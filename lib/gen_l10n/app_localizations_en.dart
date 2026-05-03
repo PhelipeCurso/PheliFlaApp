@@ -234,4 +234,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get login => 'Login!';
+
+  @override
+  String get rememberEmail => 'Remember email';
+
+  @override
+  String get forgotYourPassword => 'Forgot_your_password?';
+
+  @override
+  String get dontHaveAnAccountSignUp => 'Don\'t have an account? Sign up';
+
+  @override
+  String get signInWithGoogle => 'Sign in with Google';
+
+  @override
+  String get oR => 'or';
+
+  @override
+  String get password => 'password';
+
+  @override
+  String get ticket => 'Ticket';
+
+  @override
+  String get buyTicketsForTheGames => 'Buy tickets for the games.';
+
+  @override
+  String get subscribeNow => 'Subscribe now';
 }

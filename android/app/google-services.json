@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:803919627793:android:df7de56b49382c0efd13b0",
         "android_client_info": {
-          "package_name": "com.example.flamengo_chat"
+          "package_name": "com.phelipearaujo.PheliFlaChat"
         }
       },
       "oauth_client": [
@@ -17,7 +17,7 @@
           "client_id": "803919627793-hul6jnehr6o62dhnt750uj5i3caq9bnh.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.example.flamengo_chat",
+            "package_name": "com.phelipearaujo.PheliFlaChat",
             "certificate_hash": "cba249b1df38a562d529c4d5622672eacf7fcac4"
           }
         },

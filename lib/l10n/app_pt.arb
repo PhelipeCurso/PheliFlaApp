@@ -61,6 +61,15 @@
   "local_escolhaLoja": "Escolha sua loja",
   "welcome": "Bem-vindo!",
   "email": "E-mail",
-  "login": "ENTRAR"
+  "login": "ENTRAR",
+  "rememberEmail": "Lembre-se email",
+  "forgotYourPassword":"Esqueceu sua senha?",
+  "dontHaveAnAccountSignUp":"Não tem uma conta? Cadastre-se",
+  "signInWithGoogle":"Entrar com Google",
+  "oR":"or",
+  "password": "Senha",
+  "ticket": "Ingresso",
+  "buyTicketsForTheGames": "Compre ingressos para os jogos!",
+  "subscribeNow":"Assinar agora!"
 
 }

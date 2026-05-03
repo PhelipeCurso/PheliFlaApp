@@ -73,5 +73,14 @@
   "local_escolhaLoja": "Choose your store",
   "welcome": "Welcome!",
   "email": "E-mail",
-  "login": "Login!"
+  "login": "Login!",
+  "rememberEmail": "Remember email",
+  "forgotYourPassword":"Forgot_your_password?",
+  "dontHaveAnAccountSignUp":"Don't have an account? Sign up",
+  "signInWithGoogle":"Sign in with Google",
+  "oR":"or",
+  "password": "password",
+  "ticket": "Ticket",
+  "buyTicketsForTheGames": "Buy tickets for the games.",
+  "subscribeNow":"Subscribe now"
 }

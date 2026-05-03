@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:pheli_fla_app/gen_l10n/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -172,7 +173,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        "Bem-vindo!",
+                        AppLocalizations.of(context)!.welcome,
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
@@ -217,14 +218,14 @@ class _LoginScreenState extends State<LoginScreen> {
                             onChanged: (v) => setState(() => _lembrarLogin = v!),
                           ),
                           Text(
-                            "Lembrar e-mail",
+                            AppLocalizations.of(context)!.rememberEmail,
                             style: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
                           ),
                           const Spacer(),
                           TextButton(
                             onPressed: () {},
                             child: Text(
-                              "Esqueceu a senha?",
+                              AppLocalizations.of(context)!.forgotYourPassword,
                               style: TextStyle(
                                 fontSize: 12,
                                 color: isDark ? Colors.blueAccent : Colors.blue[800],
@@ -248,7 +249,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         child: _isLoading 
                           ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) 
-                          : const Text("ENTRAR", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                          :  Text( AppLocalizations.of(context)!.login, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                       ),
 
                       const SizedBox(height: 25),
@@ -270,7 +271,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed: _isLoading ? null : _loginWithGoogle,
                         icon: Icon(Icons.g_mobiledata, size: 30, color: isDark ? Colors.white : Colors.black87),
                         label: Text(
-                          "Entrar com Google",
+                          AppLocalizations.of(context)!.signInWithGoogle,
                           style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.w600),
                         ),
                         style: OutlinedButton.styleFrom(
@@ -285,7 +286,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextButton(
                         onPressed: () => Navigator.pushNamed(context, '/register'),
                         child: Text(
-                          "Não tem conta? Cadastre-se",
+                          AppLocalizations.of(context)!.dontHaveAnAccountSignUp,
                           style: TextStyle(
                             color: isDark ? Colors.redAccent : Colors.red[900],
                             fontWeight: FontWeight.bold,

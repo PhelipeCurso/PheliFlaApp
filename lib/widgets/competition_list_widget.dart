@@ -6,10 +6,10 @@ class CompetitionListWidget extends StatefulWidget {
   final String competicao;
 
   const CompetitionListWidget({Key? key, required this.competicao})
-    : super(key: key);
+      : super(key: key);
 
   @override
-  _CompetitionListWidgetState createState() => _CompetitionListWidgetState();
+  State<CompetitionListWidget> createState() => _CompetitionListWidgetState();
 }
 
 class _CompetitionListWidgetState extends State<CompetitionListWidget> {
@@ -21,12 +21,11 @@ class _CompetitionListWidgetState extends State<CompetitionListWidget> {
       children: [
         _buildFilterButtons(),
         Expanded(
-          // Substituímos o carregamento manual pelo StreamBuilder
           child: StreamBuilder<List<Game>>(
             stream: GamesService().getGamesByCompetition(widget.competicao),
             builder: (context, snapshot) {
               if (snapshot.hasError) {
-                return Center(child: Text("Erro ao carregar jogos."));
+                return const Center(child: Text("Erro ao carregar jogos."));
               }
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return Center(
@@ -37,50 +36,50 @@ class _CompetitionListWidgetState extends State<CompetitionListWidget> {
               final allGames = snapshot.data ?? [];
               final now = DateTime.now();
 
-              // Fazemos o filtro de data localmente com os dados que chegaram do Firebase
-              final filteredGames =
-                  allGames.where((g) {
-                    try {
-                      final gameDate = DateTime.parse(g.data);
-                      final isSameDay =
-                          gameDate.day == now.day &&
-                          gameDate.month == now.month &&
-                          gameDate.year == now.year;
+              // 1. FILTRAGEM LOCAL
+              final filteredGames = allGames.where((g) {
+                try {
+                  final gameDate = DateTime.parse(g.data);
+                  final isSameDay = gameDate.day == now.day &&
+                      gameDate.month == now.month &&
+                      gameDate.year == now.year;
 
-                      if (selectedFilter == 'today') {
-                        return isSameDay;
-                      } else if (selectedFilter == 'future') {
-                        return gameDate.isAfter(now) && !isSameDay;
-                      } else {
-                        return gameDate.isBefore(now) && !isSameDay;
-                      }
-                    } catch (e) {
-                      return false;
-                    }
-                  }).toList();
-              // 2. ORDENAÇÃO DINÂMICA (A parte que você precisa adicionar)
+                  if (selectedFilter == 'today') {
+                    return isSameDay;
+                  } else if (selectedFilter == 'future') {
+                    return gameDate.isAfter(now) && !isSameDay;
+                  } else {
+                    return gameDate.isBefore(now) && !isSameDay;
+                  }
+                } catch (e) {
+                  return false;
+                }
+              }).toList();
+
+              // 2. ORDENAÇÃO DINÂMICA
               filteredGames.sort((a, b) {
                 DateTime dateA = DateTime.tryParse(a.data) ?? DateTime(2000);
                 DateTime dateB = DateTime.tryParse(b.data) ?? DateTime(2000);
 
                 if (selectedFilter == 'future' || selectedFilter == 'today') {
-                  // Para o futuro, queremos o mais próximo primeiro (Crescente: 10/05, 15/05, 20/05)
+                  // Futuro: O mais próximo primeiro (Crescente)
                   return dateA.compareTo(dateB);
                 } else {
-                  // Para o passado, queremos o último que aconteceu no topo (Decrescente: 05/05, 01/05, 20/04)
+                  // Passado: O último que aconteceu no topo (Decrescente)
                   return dateB.compareTo(dateA);
                 }
               });
 
               if (filteredGames.isEmpty) {
-                return Center(child: Text("Nenhum jogo nesta categoria."));
+                return const Center(
+                  child: Text("Nenhum jogo nesta categoria."),
+                );
               }
 
               return ListView.builder(
-                padding: EdgeInsets.all(12),
+                padding: const EdgeInsets.all(12),
                 itemCount: filteredGames.length,
-                itemBuilder:
-                    (context, index) => _buildGameCard(filteredGames[index]),
+                itemBuilder: (context, index) => _buildGameCard(filteredGames[index]),
               );
             },
           ),
@@ -91,12 +90,10 @@ class _CompetitionListWidgetState extends State<CompetitionListWidget> {
 
   Widget _buildFilterButtons() {
     return Container(
-      padding: EdgeInsets.symmetric(vertical: 8),
-      // Usa a cor do tema, adaptando-se automaticamente
-      color:
-          Theme.of(context).brightness == Brightness.dark
-              ? Colors.black26
-              : Colors.grey[100],
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      color: Theme.of(context).brightness == Brightness.dark
+          ? Colors.black26
+          : Colors.grey[100],
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
@@ -114,46 +111,53 @@ class _CompetitionListWidgetState extends State<CompetitionListWidget> {
       label: Text(label),
       selected: isSelected,
       onSelected: (_) {
-        // Agora o setState só muda o filtro visual, o StreamBuilder reage automaticamente
         setState(() {
           selectedFilter = filter;
         });
       },
       selectedColor: Colors.red[800],
       labelStyle: TextStyle(
-        color:
-            isSelected
-                ? Colors.white
-                : (Theme.of(context).brightness == Brightness.dark
-                    ? Colors.white70
-                    : Colors.black87),
+        color: isSelected
+            ? Colors.white
+            : (Theme.of(context).brightness == Brightness.dark
+                ? Colors.white70
+                : Colors.black87),
       ),
     );
   }
 
   Widget _buildGameCard(Game game) {
-    // Nova lógica para exibir o placar baseado nos campos do Firebase
-    String placarExibicao =
-        game.concluido
-            ? '${game.golsFlamengo} - ${game.golsAdversario}'
-            : ' - ';
+    String placarExibicao = game.concluido
+        ? '${game.golsFlamengo} - ${game.golsAdversario}'
+        : ' - ';
+
+    // Formatação da data (Ex: 2026-05-10 vira 10/05)
+    String dataFormatada = "";
+    try {
+      DateTime dt = DateTime.parse(game.data);
+      dataFormatada = "${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}";
+    } catch (e) {
+      dataFormatada = game.data;
+    }
 
     return Card(
       elevation: 3,
-      margin: EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             Text(
-              game.etapa,
+              game.etapa.toUpperCase(),
               style: TextStyle(
+                fontSize: 11,
+                letterSpacing: 1.1,
                 fontWeight: FontWeight.bold,
                 color: Colors.grey[600],
               ),
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
@@ -162,27 +166,43 @@ class _CompetitionListWidgetState extends State<CompetitionListWidget> {
                   children: [
                     Text(
                       placarExibicao,
-                      style: TextStyle(
-                        fontSize: 24,
+                      style: const TextStyle(
+                        fontSize: 26,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    Text(game.hora, style: TextStyle(color: Colors.grey)),
+                    const SizedBox(height: 4),
+                    // Badge com Data e Hora
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        "$dataFormatada • ${game.hora}",
+                        style: TextStyle(
+                          color: Colors.grey[800],
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
                 _buildTeam(game.escudoAdversario, game.adversario),
               ],
             ),
-            Divider(height: 24),
+            const Divider(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.location_on, size: 16, color: Colors.red[800]),
-                SizedBox(width: 4),
+                const SizedBox(width: 4),
                 Flexible(
                   child: Text(
                     game.local,
-                    style: TextStyle(fontSize: 12),
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -196,20 +216,22 @@ class _CompetitionListWidgetState extends State<CompetitionListWidget> {
 
   Widget _buildTeam(String shield, String name) {
     return SizedBox(
-      width: 80,
+      width: 85,
       child: Column(
         children: [
           Image.network(
             shield,
             width: 50,
             height: 50,
-            errorBuilder: (_, __, ___) => Icon(Icons.shield, size: 50),
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => const Icon(Icons.shield, size: 50, color: Colors.grey),
           ),
-          SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             name,
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
             textAlign: TextAlign.center,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
         ],

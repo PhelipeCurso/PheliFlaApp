@@ -3,9 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pheli_fla_app/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
-import '../locale_provider.dart'; // Ajuste o caminho conforme seu projeto
+import '../locale_provider.dart'; 
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 
 class SettingsScreen extends StatefulWidget {
   final bool isDarkMode;
@@ -38,16 +37,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void carregarPreferencia() async {
-    final uid = FirebaseAuth.instance.currentUser!.uid;
-    final doc =
-        await FirebaseFirestore.instance.collection('usuarios').doc(uid).get();
-    setState(() {
-      notificacoesAtivadas = doc.data()?['notificacoesAtivadas'] ?? true;
-    });
+    final user = _auth.currentUser;
+    if (user != null) {
+      final doc = await FirebaseFirestore.instance.collection('usuarios').doc(user.uid).get();
+      if (mounted) {
+        setState(() {
+          notificacoesAtivadas = doc.data()?['notificacoesAtivadas'] ?? true;
+        });
+      }
+    }
   }
 
   void atualizarPreferencia(bool valor) async {
-    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final uid = _auth.currentUser!.uid;
     await FirebaseFirestore.instance.collection('usuarios').doc(uid).update({
       'notificacoesAtivadas': valor,
     });
@@ -59,8 +61,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-
-    // Carregar dados dependentes de contexto apenas uma vez
     if (!_dadosCarregados) {
       final user = _auth.currentUser;
       _nomeController.text = user?.displayName ?? '';
@@ -76,39 +76,100 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
+  // --- NOVA FUNÇÃO: EXCLUSÃO DE CONTA ---
+  Future<void> _excluirConta() async {
+    final s = AppLocalizations.of(context)!;
+    final user = _auth.currentUser;
+
+    if (user == null) return;
+
+    try {
+      // 1. Deletar documento do usuário no Firestore
+      await FirebaseFirestore.instance.collection('usuarios').doc(user.uid).delete();
+
+      // 2. Deletar o usuário no Firebase Auth
+      await user.delete();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Sua conta e dados foram excluídos com sucesso.")),
+        );
+        // Redireciona para a tela inicial/login
+        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+      }
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Para sua segurança, faça login novamente antes de excluir a conta.")),
+          );
+          await _auth.signOut();
+          Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Erro ao excluir: ${e.message}")),
+          );
+        }
+      }
+    }
+  }
+
+  void _confirmarExclusao() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Excluir Conta"),
+        content: const Text("Tem certeza? Esta ação é permanente. Todas as suas mensagens e dados do PheliFla serão apagados para sempre."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancelar"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _excluirConta();
+            },
+            child: const Text("EXCLUIR", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _atualizarNome() async {
     try {
       await _auth.currentUser!.updateDisplayName(_nomeController.text.trim());
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context)!.nameUpdatedSuccess),
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context)!.nameUpdatedSuccess)),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${AppLocalizations.of(context)!.nameUpdateError}: $e'),
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${AppLocalizations.of(context)!.nameUpdateError}: $e')),
+        );
+      }
     }
   }
 
   Future<void> _alterarSenha() async {
     try {
       await _auth.currentUser!.updatePassword(_senhaController.text.trim());
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context)!.passwordUpdatedSuccess),
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context)!.passwordUpdatedSuccess)),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '${AppLocalizations.of(context)!.passwordUpdateError}: $e',
-          ),
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${AppLocalizations.of(context)!.passwordUpdateError}: $e')),
+        );
+      }
     }
   }
 
@@ -133,29 +194,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onChanged: widget.onThemeChanged,
           ),
           SwitchListTile(
-            title: Text("Notificações de novas mensagens"),
+            title: const Text("Notificações de novas mensagens"),
             value: notificacoesAtivadas,
-            onChanged: (valor) {
-              atualizarPreferencia(valor);
-            },
+            onChanged: atualizarPreferencia,
           ),
           const Divider(),
           TextField(
             controller: _nomeController,
             decoration: InputDecoration(labelText: s.username),
           ),
+          const SizedBox(height: 8),
           ElevatedButton(onPressed: _atualizarNome, child: Text(s.updateName)),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           TextField(
             controller: _senhaController,
             decoration: InputDecoration(labelText: s.newPassword),
             obscureText: true,
           ),
+          const SizedBox(height: 8),
           ElevatedButton(
             onPressed: _alterarSenha,
             child: Text(s.changePassword),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           DropdownButtonFormField<String>(
             value: _idiomaSelecionado,
             items: const [
@@ -165,7 +226,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onChanged: _mudarIdioma,
             decoration: InputDecoration(labelText: s.language),
           ),
-          const Divider(height: 32),
+          const Divider(height: 40),
+          
+          // --- BOTÃO DE EXCLUSÃO ---
+          ListTile(
+            title: const Text("Excluir minha conta", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            subtitle: const Text("Remover permanentemente todos os seus dados"),
+            leading: const Icon(Icons.delete_forever, color: Colors.red),
+            onTap: _confirmarExclusao,
+          ),
+          
+          const Divider(height: 40),
           ListTile(
             title: Text(s.appVersion),
             subtitle: Text(_version),

@@ -8,15 +8,8 @@ import 'package:pheli_fla_app/screens/home_screen.dart';
 class RoomSelectionScreen extends StatelessWidget {
   const RoomSelectionScreen({super.key});
 
-  final List<String> salaIds = const [
-    'sala_geral',
-    'sala_bastidores',
-    'sala_jogo',
-    'sala_resenha',
-    'sala_mulheres',
-  ];
-
-  void _enterChatRoom(
+  // Lógica de entrada na sala
+  Future<void> _enterChatRoom(
     BuildContext context,
     String roomId,
     String nomeUsuario,
@@ -34,33 +27,37 @@ class RoomSelectionScreen extends StatelessWidget {
     final List<dynamic> usuarios = data['usuarios'] ?? [];
     final int limite = data['limite'] ?? 20;
 
-    if (usuarios.contains(uid)) {
-      // usuário já na sala, continuar
-    } else if (usuarios.length >= limite) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Sala cheia! Tente outra.')));
-      return;
-    } else {
-      // adiciona usuário à lista
-      usuarios.add(uid);
-      await salaRef.update({
-        'usuarios': FieldValue.arrayUnion([uid]),
-      });
-    }
-    final nomeSala = data['nome'] ?? roomId;
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder:
-            (_) => ChatScreen(
-              roomName: roomId,
-              nomeUsuario: nomeUsuario,
-              photoUrl: photoUrl,
+    if (!usuarios.contains(uid)) {
+      if (usuarios.length >= limite) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Sala cheia! Tente outra.'),
+              backgroundColor: Colors.redAccent,
             ),
-      ),
-    );
+          );
+        }
+        return;
+      } else {
+        // Adiciona usuário à lista no Firestore
+        await salaRef.update({
+          'usuarios': FieldValue.arrayUnion([uid]),
+        });
+      }
+    }
+
+    if (context.mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ChatScreen(
+            roomName: roomId,
+            nomeUsuario: nomeUsuario,
+            photoUrl: photoUrl,
+          ),
+        ),
+      );
+    }
   }
 
   void _cancelAndGoToLogin(BuildContext context) {
@@ -70,33 +67,114 @@ class RoomSelectionScreen extends StatelessWidget {
   void _goToHome(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     final nomeUsuario = user?.displayName ?? 'Usuário';
+    
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder:
-            (_) => HomeScreen(
-              nomeUsuario: nomeUsuario,
-              isDarkMode: false,
-              onThemeChanged: (_) {},
-              isPlusUser: true,
+        builder: (_) => HomeScreen(
+          nomeUsuario: nomeUsuario,
+          isDarkMode: false,
+          onThemeChanged: (_) {},
+          isPlusUser: true,
+        ),
+      ),
+    );
+  }
+
+  // Extração do Dialog para limpar o método build
+  Future<void> _showCreateRoomDialog(BuildContext context) async {
+    final nomeSalaController = TextEditingController();
+    final limiteController = TextEditingController(text: '20');
+
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Criar Nova Sala'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nomeSalaController,
+              decoration: const InputDecoration(
+                labelText: 'Nome da sala',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.chat_bubble_outline),
+              ),
+              textCapitalization: TextCapitalization.sentences,
             ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: limiteController,
+              decoration: const InputDecoration(
+                labelText: 'Limite de usuários',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.group_add_outlined),
+              ),
+              keyboardType: TextInputType.number,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            child: const Text('Cancelar'),
+            onPressed: () => Navigator.pop(context),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red[800],
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Criar'),
+            onPressed: () async {
+              final nome = nomeSalaController.text.trim();
+              int limite = int.tryParse(limiteController.text.trim()) ?? 20;
+              
+              if (limite < 2) limite = 2;
+              if (limite > 100) limite = 100;
+              if (nome.isEmpty) return;
+
+              await FirebaseFirestore.instance.collection('salas').add({
+                'nome': nome,
+                'limite': limite,
+                'usuarios': [],
+                'excluida': false,
+              });
+
+              if (context.mounted) Navigator.pop(context);
+            },
+          ),
+        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final nomeUsuario = ModalRoute.of(context)!.settings.arguments as String;
+    // Tratamento de segurança caso os argumentos sejam nulos
+    final args = ModalRoute.of(context)?.settings.arguments;
+    final nomeUsuario = args is String ? args : 'Usuário';
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Escolha uma Sala'),
+        // leading coloca o widget no lado esquerdo da AppBar
+        leading: IconButton(
+          icon: const Icon(Icons.home),
+          tooltip: 'Ir para a Home',
+          onPressed: () => _goToHome(context),
+        ),
+        title: const Text(
+          'Escolha uma Sala',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         centerTitle: true,
-        automaticallyImplyLeading: false,
+        backgroundColor: Colors.black87,
+        foregroundColor: Colors.white,
         actions: [
           IconButton(
-            icon: const Icon(Icons.home),
-            onPressed: () => _goToHome(context),
+            icon: const Icon(Icons.logout, color: Colors.redAccent),
+            tooltip: 'Sair do App',
+            onPressed: () => _cancelAndGoToLogin(context),
           ),
         ],
       ),
@@ -107,127 +185,86 @@ class RoomSelectionScreen extends StatelessWidget {
             fit: BoxFit.cover,
           ),
         ),
-        child: StreamBuilder<QuerySnapshot>(
-          stream:
-              FirebaseFirestore.instance
-                  .collection('salas')
-                  .where('excluida', isNotEqualTo: true)
-                  .snapshots(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData)
-              return const Center(child: CircularProgressIndicator());
+        child: Container(
+          color: Colors.black.withOpacity(0.4),
+          child: StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('salas')
+                .where('excluida', isNotEqualTo: true)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator(color: Colors.red));
+              }
 
-            final docs = snapshot.data!.docs;
-            return ListView.builder(
-              padding: const EdgeInsets.all(30),
-              itemCount: docs.length,
-              itemBuilder: (context, index) {
-                final doc = docs[index];
-                final data = doc.data() as Map<String, dynamic>;
-                final nome = data['nome'] ?? 'Sala';
-                final usuarios = List.from(data['usuarios'] ?? []);
-                final limite = data['limite'] ?? 20;
-                final salaId = doc.id;
-
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 20),
-                  child: ElevatedButton(
-                    onPressed:
-                        usuarios.length >= limite
-                            ? null
-                            : () =>
-                                _enterChatRoom(context, salaId, nomeUsuario),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black87,
-                      minimumSize: const Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(
-                      '$nome (${usuarios.length}/$limite)',
-                      style: const TextStyle(fontSize: 18),
-                    ),
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return const Center(
+                  child: Text(
+                    'Nenhuma sala disponível no momento.',
+                    style: TextStyle(color: Colors.white, fontSize: 18),
                   ),
                 );
-              },
-            );
-          },
-        ),
-      ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.only(bottom: 20),
-        child: TextButton(
-          onPressed: () => _cancelAndGoToLogin(context),
-          child: const Text(
-            'Sair do App',
-            style: TextStyle(
-              fontSize: 16,
-              color: Color.fromARGB(255, 228, 3, 3),
-            ),
+              }
+
+              final docs = snapshot.data!.docs;
+              
+              return ListView.separated(
+                padding: const EdgeInsets.all(20),
+                itemCount: docs.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final doc = docs[index];
+                  final data = doc.data() as Map<String, dynamic>;
+                  
+                  final nome = data['nome'] ?? 'Sala';
+                  final usuarios = List.from(data['usuarios'] ?? []);
+                  final limite = data['limite'] ?? 20;
+                  final salaId = doc.id;
+                  
+                  final bool salaCheia = usuarios.length >= limite;
+
+                  return Card(
+                    elevation: 4,
+                    color: Colors.white.withOpacity(0.95),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      title: Text(
+                        nome,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      subtitle: Text(
+                        '${usuarios.length} de $limite participantes',
+                        style: TextStyle(
+                          color: salaCheia ? Colors.red : Colors.grey[700],
+                          fontWeight: salaCheia ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                      trailing: Icon(
+                        salaCheia ? Icons.lock : Icons.login,
+                        color: salaCheia ? Colors.red : Colors.green[600],
+                      ),
+                      onTap: salaCheia
+                          ? null
+                          : () => _enterChatRoom(context, salaId, nomeUsuario),
+                    ),
+                  );
+                },
+              );
+            },
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final nomeSalaController = TextEditingController();
-          final limiteController = TextEditingController(text: '20');
-
-          await showDialog(
-            context: context,
-            builder:
-                (context) => AlertDialog(
-                  title: const Text('Criar nova sala'),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextField(
-                        controller: nomeSalaController,
-                        decoration: const InputDecoration(
-                          labelText: 'Nome da sala',
-                        ),
-                      ),
-                      TextField(
-                        controller: limiteController,
-                        decoration: const InputDecoration(
-                          labelText: 'Limite de usuários',
-                        ),
-                        keyboardType: TextInputType.number,
-                      ),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(
-                      child: const Text('Cancelar'),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    ElevatedButton(
-                      child: const Text('Criar'),
-                      onPressed: () async {
-                        final nome = nomeSalaController.text.trim();
-                        int limite =
-                            int.tryParse(limiteController.text.trim()) ?? 20;
-                        if (limite < 2) limite = 2;
-                        if (limite > 100) limite = 100;
-                        if (nome.isEmpty) return;
-
-                        await FirebaseFirestore.instance
-                            .collection('salas')
-                            .add({
-                              'nome': nome,
-                              'limite': limite,
-                              'usuarios': [],
-                              'excluida': false,
-                            });
-
-                        Navigator.pop(context);
-                      },
-                    ),
-                  ],
-                ),
-          );
-        },
-        child: const Icon(Icons.add),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showCreateRoomDialog(context),
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text('Nova Sala', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.red[800],
       ),
     );

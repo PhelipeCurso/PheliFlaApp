@@ -541,6 +541,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Login!'**
   String get login;
+
+  /// No description provided for @rememberEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Remember email'**
+  String get rememberEmail;
+
+  /// No description provided for @forgotYourPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot_your_password?'**
+  String get forgotYourPassword;
+
+  /// No description provided for @dontHaveAnAccountSignUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t have an account? Sign up'**
+  String get dontHaveAnAccountSignUp;
+
+  /// No description provided for @signInWithGoogle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with Google'**
+  String get signInWithGoogle;
+
+  /// No description provided for @oR.
+  ///
+  /// In en, this message translates to:
+  /// **'or'**
+  String get oR;
+
+  /// No description provided for @password.
+  ///
+  /// In en, this message translates to:
+  /// **'password'**
+  String get password;
+
+  /// No description provided for @ticket.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket'**
+  String get ticket;
+
+  /// No description provided for @buyTicketsForTheGames.
+  ///
+  /// In en, this message translates to:
+  /// **'Buy tickets for the games.'**
+  String get buyTicketsForTheGames;
+
+  /// No description provided for @subscribeNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscribe now'**
+  String get subscribeNow;
 }
 
 class _AppLocalizationsDelegate
