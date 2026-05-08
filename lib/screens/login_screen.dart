@@ -73,6 +73,8 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!userDoc.exists) throw "Usuário não registrado no banco de dados.";
 
       final nomeUsuario = userDoc['nomeUsuario'];
+      
+      // MELHORIA: Salva o token e pede permissão antes de ir para a Home
       await _salvarTokenENotificacoes(uid, nomeUsuario);
       await _salvarPreferencias();
 
@@ -117,7 +119,9 @@ class _LoginScreenState extends State<LoginScreen> {
         });
       }
 
+      // MELHORIA: Salva o token e pede permissão
       await _salvarTokenENotificacoes(uid, nome);
+      
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home_screen', arguments: nome);
     } catch (e) {
@@ -127,14 +131,40 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  /// MELHORIA: Gerenciamento de Token e Permissões de Notificação
   Future<void> _salvarTokenENotificacoes(String uid, String nomeUsuario) async {
-    final token = await FirebaseMessaging.instance.getToken();
-    await FirebaseFirestore.instance.collection('usuarios').doc(uid).set({
-      'fcmToken': token,
-      'nomeUsuario': nomeUsuario,
-      'isOnline': true,
-      'ultimaAtividade': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    try {
+      FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+      // 1. Solicita permissão explicitamente (Essencial para Android 13+)
+      NotificationSettings settings = await messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+
+      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+        // 2. Busca o Token único deste aparelho
+        String? token = await messaging.getToken();
+
+        if (token != null) {
+          // 3. Salva no Firestore. O Backend usará esse fcmToken para 
+          // filtrar o remetente e não notificar o próprio autor da mensagem.
+          await FirebaseFirestore.instance.collection('usuarios').doc(uid).set({
+            'fcmToken': token,
+            'nomeUsuario': nomeUsuario,
+            'isOnline': true,
+            'ultimaAtividade': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+          
+          debugPrint("✅ FCM Token atualizado para o usuário $nomeUsuario");
+        }
+      } else {
+        debugPrint("⚠️ Usuário recusou permissões de notificação.");
+      }
+    } catch (e) {
+      debugPrint("❌ Erro ao processar notificações no login: $e");
+    }
   }
 
   void _mostrarMensagem(String mensagem) {
@@ -153,7 +183,7 @@ class _LoginScreenState extends State<LoginScreen> {
           Positioned.fill(
             child: Image.asset('assets/images/PheliFlafundo.png', fit: BoxFit.cover),
           ),
-          Container(color: Colors.black.withOpacity(isDark ? 0.50 : 0.50)),
+          Container(color: Colors.black.withOpacity(0.50)),
 
           Center(
             child: SingleChildScrollView(
@@ -163,8 +193,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 decoration: BoxDecoration(
                   color: isDark ? const Color(0xFF1A1A1A).withOpacity(0.75) : Colors.white.withOpacity(0.75),
                   borderRadius: BorderRadius.circular(25),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black45, blurRadius: 15, offset: const Offset(5, 5)),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black45, blurRadius: 15, offset: Offset(5, 5)),
                   ],
                 ),
                 child: Form(
@@ -249,7 +279,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         child: _isLoading 
                           ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) 
-                          :  Text( AppLocalizations.of(context)!.login, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                          : Text(AppLocalizations.of(context)!.login, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                       ),
 
                       const SizedBox(height: 25),
@@ -304,7 +334,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // MÉTODO DE ESTILO ÚNICO E CORRIGIDO
   InputDecoration _inputStyle(String label, IconData icon, bool isDark) {
     final Color contentColor = isDark ? Colors.white70 : Colors.black54;
     final Color primaryColor = isDark ? Colors.redAccent : Colors.red[900]!;

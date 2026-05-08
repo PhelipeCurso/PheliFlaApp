@@ -72,13 +72,23 @@ class _MyAppState extends State<MyApp> {
     _setupFCM();
   }
 
-  void _setupFCM() {
+  void _setupFCM() async {
+    // 1. INSCRIÇÃO NOS TÓPICOS (O que faltava!)
+    // Isso garante que este celular receba as mensagens enviadas para esses grupos
+    await FirebaseMessaging.instance.subscribeToTopic('placar_notificacoes');
+    await FirebaseMessaging.instance.subscribeToTopic('noticias');
+    
+    print("✅ Inscrito nos tópicos: placar_notificacoes e noticias");
+
+    // 2. OUVINTE DE MENSAGENS (Foreground)
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       if (message.notification != null) {
+        // Evita que o usuário receba notificação de uma mensagem que ele mesmo enviou no chat
         final senderId = message.data['senderId'];
         final currentUserId = FirebaseAuth.instance.currentUser?.uid;
         if (senderId != null && senderId == currentUserId) return;
 
+        // Dispara a notificação local usando o seu serviço
         NotificationService.showNotification(
           message.notification!.title ?? 'PheliFla News',
           message.notification!.body ?? '',

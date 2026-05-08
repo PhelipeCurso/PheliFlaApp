@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'chat_screen.dart';
 import 'package:pheli_fla_app/screens/home_screen.dart';
@@ -8,7 +9,7 @@ import 'package:pheli_fla_app/screens/home_screen.dart';
 class RoomSelectionScreen extends StatelessWidget {
   const RoomSelectionScreen({super.key});
 
-  // Lógica de entrada na sala
+  /// Lógica de entrada na sala com gerenciamento de notificações por tópico
   Future<void> _enterChatRoom(
     BuildContext context,
     String roomId,
@@ -17,6 +18,8 @@ class RoomSelectionScreen extends StatelessWidget {
     final user = FirebaseAuth.instance.currentUser;
     final uid = user?.uid;
     final photoUrl = user?.photoURL ?? '';
+
+    if (uid == null) return;
 
     final salaRef = FirebaseFirestore.instance.collection('salas').doc(roomId);
     final doc = await salaRef.get();
@@ -27,6 +30,7 @@ class RoomSelectionScreen extends StatelessWidget {
     final List<dynamic> usuarios = data['usuarios'] ?? [];
     final int limite = data['limite'] ?? 20;
 
+    // 1. Verifica se o usuário já "interagiu" (está na lista) ou se há vaga
     if (!usuarios.contains(uid)) {
       if (usuarios.length >= limite) {
         if (context.mounted) {
@@ -39,13 +43,24 @@ class RoomSelectionScreen extends StatelessWidget {
         }
         return;
       } else {
-        // Adiciona usuário à lista no Firestore
+        // Registra a interação do usuário adicionando-o ao Firestore
         await salaRef.update({
           'usuarios': FieldValue.arrayUnion([uid]),
         });
       }
     }
 
+    // 2. MELHORIA DE NOTIFICAÇÃO: Inscrição no tópico
+    // Isso garante que o usuário receba notificações mesmo com o app fechado,
+    // pois o Firebase gerencia a entrega via sistema operacional.
+    try {
+      await FirebaseMessaging.instance.subscribeToTopic('chat_$roomId');
+      debugPrint("✅ Inscrito nas notificações da sala: $roomId");
+    } catch (e) {
+      debugPrint("❌ Erro ao inscrever no tópico: $e");
+    }
+
+    // 3. Navegação para a tela de Chat
     if (context.mounted) {
       Navigator.pushReplacement(
         context,
@@ -75,13 +90,13 @@ class RoomSelectionScreen extends StatelessWidget {
           nomeUsuario: nomeUsuario,
           isDarkMode: false,
           onThemeChanged: (_) {},
-          isPlusUser: true,
+          isPlusUser: true, // Mantendo conforme sua lógica atual
         ),
       ),
     );
   }
 
-  // Extração do Dialog para limpar o método build
+  /// Dialog para criação de novas salas
   Future<void> _showCreateRoomDialog(BuildContext context) async {
     final nomeSalaController = TextEditingController();
     final limiteController = TextEditingController(text: '20');
@@ -151,13 +166,11 @@ class RoomSelectionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Tratamento de segurança caso os argumentos sejam nulos
     final args = ModalRoute.of(context)?.settings.arguments;
     final nomeUsuario = args is String ? args : 'Usuário';
 
     return Scaffold(
       appBar: AppBar(
-        // leading coloca o widget no lado esquerdo da AppBar
         leading: IconButton(
           icon: const Icon(Icons.home),
           tooltip: 'Ir para a Home',

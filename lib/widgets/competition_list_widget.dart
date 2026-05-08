@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/game.dart';
 import '../services/games_service.dart';
+import '../screens/GameDetailsPage.dart'; // Importe correto da nova tela
 
 class CompetitionListWidget extends StatefulWidget {
   final String competicao;
@@ -62,10 +63,8 @@ class _CompetitionListWidgetState extends State<CompetitionListWidget> {
                 DateTime dateB = DateTime.tryParse(b.data) ?? DateTime(2000);
 
                 if (selectedFilter == 'future' || selectedFilter == 'today') {
-                  // Futuro: O mais próximo primeiro (Crescente)
                   return dateA.compareTo(dateB);
                 } else {
-                  // Passado: O último que aconteceu no topo (Decrescente)
                   return dateB.compareTo(dateA);
                 }
               });
@@ -126,12 +125,13 @@ class _CompetitionListWidgetState extends State<CompetitionListWidget> {
     );
   }
 
+  // --- MÉTODO CORRIGIDO ABAIXO ---
   Widget _buildGameCard(Game game) {
+    // Definimos as variáveis antes do return para o código ficar limpo
     String placarExibicao = game.concluido
         ? '${game.golsFlamengo} - ${game.golsAdversario}'
         : ' - ';
 
-    // Formatação da data (Ex: 2026-05-10 vira 10/05)
     String dataFormatada = "";
     try {
       DateTime dt = DateTime.parse(game.data);
@@ -144,71 +144,87 @@ class _CompetitionListWidgetState extends State<CompetitionListWidget> {
       elevation: 3,
       margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Text(
-              game.etapa.toUpperCase(),
-              style: TextStyle(
-                fontSize: 11,
-                letterSpacing: 1.1,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[600],
-              ),
+      // O InkWell fica dentro do Card para não estragar a elevação, 
+      // ou fora se você quiser que o card inteiro reaja ao toque.
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => GameDetailsPage(game: game),
             ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildTeam(game.escudotime, "Flamengo"),
-                Column(
-                  children: [
-                    Text(
-                      placarExibicao,
-                      style: const TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    // Badge com Data e Hora
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[200],
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        "$dataFormatada • ${game.hora}",
-                        style: TextStyle(
-                          color: Colors.grey[800],
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Text(
+                game.etapa.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 11,
+                  letterSpacing: 1.1,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildTeam(game.escudotime, "Flamengo"),
+                  Column(
+                    children: [
+                      Text(
+                        placarExibicao,
+                        style: const TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                _buildTeam(game.escudoAdversario, game.adversario),
-              ],
-            ),
-            const Divider(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.location_on, size: 16, color: Colors.red[800]),
-                const SizedBox(width: 4),
-                Flexible(
-                  child: Text(
-                    game.local,
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-                    overflow: TextOverflow.ellipsis,
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).brightness == Brightness.dark 
+                              ? Colors.white10 
+                              : Colors.grey[200],
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          "$dataFormatada • ${game.hora}",
+                          style: TextStyle(
+                            color: Theme.of(context).brightness == Brightness.dark 
+                                ? Colors.white70 
+                                : Colors.grey[800],
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-          ],
+                  _buildTeam(game.escudoAdversario, game.adversario),
+                ],
+              ),
+              const Divider(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.location_on, size: 16, color: Colors.red[800]),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      game.local,
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
