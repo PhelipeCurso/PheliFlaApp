@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:record/record.dart';
@@ -54,6 +55,10 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 
   Future<void> _initializeRoom() async {
     await _chatService.criarSalaSeNaoExistir(widget.roomName);
+    
+    await FirebaseMessaging.instance.subscribeToTopic(widget.roomName);
+    print("✅ Inscrito no tópico da sala: ${widget.roomName}");
+
     _setUsuarioOnline(true);
     _carregarNomeSala();
   }

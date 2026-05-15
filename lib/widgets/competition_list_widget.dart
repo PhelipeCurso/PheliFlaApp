@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/game.dart';
 import '../services/games_service.dart';
-import '../screens/GameDetailsPage.dart'; // Importe correto da nova tela
+// MUDANÇA: Agora importamos a GameTabsPage para gerenciar as abas
+import '../screens/game_tabs_page.dart'; 
 
 class CompetitionListWidget extends StatefulWidget {
   final String competicao;
@@ -14,7 +15,7 @@ class CompetitionListWidget extends StatefulWidget {
 }
 
 class _CompetitionListWidgetState extends State<CompetitionListWidget> {
-  String selectedFilter = 'past'; // O filtro padrão inicial
+  String selectedFilter = 'past';
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +38,6 @@ class _CompetitionListWidgetState extends State<CompetitionListWidget> {
               final allGames = snapshot.data ?? [];
               final now = DateTime.now();
 
-              // 1. FILTRAGEM LOCAL
               final filteredGames = allGames.where((g) {
                 try {
                   final gameDate = DateTime.parse(g.data);
@@ -57,7 +57,6 @@ class _CompetitionListWidgetState extends State<CompetitionListWidget> {
                 }
               }).toList();
 
-              // 2. ORDENAÇÃO DINÂMICA
               filteredGames.sort((a, b) {
                 DateTime dateA = DateTime.tryParse(a.data) ?? DateTime(2000);
                 DateTime dateB = DateTime.tryParse(b.data) ?? DateTime(2000);
@@ -125,9 +124,7 @@ class _CompetitionListWidgetState extends State<CompetitionListWidget> {
     );
   }
 
-  // --- MÉTODO CORRIGIDO ABAIXO ---
   Widget _buildGameCard(Game game) {
-    // Definimos as variáveis antes do return para o código ficar limpo
     String placarExibicao = game.concluido
         ? '${game.golsFlamengo} - ${game.golsAdversario}'
         : ' - ';
@@ -144,14 +141,13 @@ class _CompetitionListWidgetState extends State<CompetitionListWidget> {
       elevation: 3,
       margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      // O InkWell fica dentro do Card para não estragar a elevação, 
-      // ou fora se você quiser que o card inteiro reaja ao toque.
       child: InkWell(
         onTap: () {
+          // MELHORIA: Redirecionando para a GameTabsPage (que abre em Confrontos primeiro)
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => GameDetailsPage(game: game),
+              builder: (context) => GameTabsPage(game: game),
             ),
           );
         },

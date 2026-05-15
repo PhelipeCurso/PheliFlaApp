@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/game.dart';
 
-class GameDetailsPage extends StatelessWidget {
+class GameDetailsTab extends StatelessWidget {
   final Game game;
 
-  const GameDetailsPage({Key? key, required this.game}) : super(key: key);
+  const GameDetailsTab({Key? key, required this.game}) : super(key: key);
 
   /// FUNÇÃO MELHORADA: Normaliza o nome removendo acentos e espaços
   String _normalizeStadiumId(String text) {
@@ -36,64 +36,56 @@ class GameDetailsPage extends StatelessWidget {
         .get();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+@override
+Widget build(BuildContext context) {
+  final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return FutureBuilder<DocumentSnapshot>(
-      future: _getStadiumData(),
-      builder: (context, snapshot) {
-        // Estado de carregamento
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator(color: Colors.red)));
-        }
+  return FutureBuilder<DocumentSnapshot>(
+    future: _getStadiumData(),
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator(color: Colors.red));
+      }
 
-        Map<String, dynamic> stadiumData = {};
-        if (snapshot.hasData && snapshot.data!.exists) {
-          stadiumData = snapshot.data!.data() as Map<String, dynamic>;
-        }
+      Map<String, dynamic> stadiumData = {};
+      if (snapshot.hasData && snapshot.data!.exists) {
+        stadiumData = snapshot.data!.data() as Map<String, dynamic>;
+      }
 
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text("Detalhes da Partida"),
-            backgroundColor: Colors.red[900],
-          ),
-          body: SingleChildScrollView(
+      // O SEGREDO ESTÁ AQUI: Envolver em um Material transparente
+      return Scaffold(
+       backgroundColor: Colors.white, // Garante que o fundo da aba seja branco
+       body: SingleChildScrollView(
+       child: Column(
+        children: [
+          _buildStadiumHeader(context, stadiumData['fotoUrl']),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 1. Header com validação de URL
-                _buildStadiumHeader(context, stadiumData['fotoUrl']),
+                _buildSectionTitle("Últimos Confrontos no Estádio"),
+                _buildH2HList(false, stadiumData['ultimosConfrontos'] ?? []), // false = isDark
 
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // 2. Últimos Confrontos
-                      _buildSectionTitle("Últimos Confrontos"),
-                      _buildH2HList(isDark, stadiumData['ultimosConfrontos'] ?? []),
+                const SizedBox(height: 24),
 
-                      const SizedBox(height: 24),
+                _buildSectionTitle("Desempenho no ${game.local}"),
+                _buildStadiumStats(false, stadiumData), // false = isDark
 
-                      // 3. Estatísticas
-                      _buildSectionTitle("Desempenho no ${game.local}"),
-                      _buildStadiumStats(isDark, stadiumData),
+                const SizedBox(height: 24),
 
-                      const SizedBox(height: 24),
-
-                      // 4. Curiosidades
-                      _buildSectionTitle("Você sabia?"),
-                      _buildCuriosityCard(isDark, stadiumData['curiosidades']),
-                    ],
-                  ),
-                ),
+                _buildSectionTitle("Você sabia?"),
+                _buildCuriosityCard(false, stadiumData['curiosidades']), // false = isDark
               ],
             ),
           ),
-        );
+        ],
+       ), 
+       ),
+       );
       },
-    );
-  }
+  );
+}
 
   Widget _buildStadiumHeader(BuildContext context, String? fotoUrl) {
     final bool hasImage = fotoUrl != null && fotoUrl.isNotEmpty;
@@ -202,13 +194,26 @@ class GameDetailsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildCuriosityCard(bool isDark, String? text) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.red.withOpacity(0.05), borderRadius: BorderRadius.circular(12)),
-      child: Text(text ?? "Nenhuma curiosidade disponível.", style: const TextStyle(fontStyle: FontStyle.italic)),
-    );
-  }
+Widget _buildCuriosityCard(bool isDark, String? text) {
+  return Container(
+    width: double.infinity, // Garante que o card ocupe a largura toda
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      // Se for dark mode, usa um cinza bem escuro, se não, um vermelho bem clarinho
+      color: isDark ? Colors.white.withOpacity(0.05) : Colors.red.withOpacity(0.05), 
+      borderRadius: BorderRadius.circular(12)
+    ),
+    child: Text(
+      text ?? "Nenhuma curiosidade disponível.",
+      style: TextStyle(
+        fontStyle: FontStyle.italic,
+        fontSize: 14, // Tamanho controlado
+        color: isDark ? Colors.white70 : Colors.black87, // Cor controlada
+        decoration: TextDecoration.none, // Remove o sublinhado amarelo
+      ),
+    ),
+  );
+}
 
   Widget _buildSectionTitle(String title) {
     return Padding(

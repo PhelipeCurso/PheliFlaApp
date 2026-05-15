@@ -45,7 +45,7 @@ class NotificationService {
   // Método que você já usava, agora centralizado para Chat e Push
   static Future<void> showNotification(String title, String body) async {
     const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      'phelifla_general_channel', // Canal único para notícias/agenda/chat
+      'phelifla_channel', // Canal único para notícias/agenda/chat
       'Notificações PheliFla',
       importance: Importance.max,
       priority: Priority.high,

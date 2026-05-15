@@ -72,28 +72,58 @@ class _MyAppState extends State<MyApp> {
     _setupFCM();
   }
 
-  void _setupFCM() async {
-    // 1. INSCRIÇÃO NOS TÓPICOS (O que faltava!)
-    // Isso garante que este celular receba as mensagens enviadas para esses grupos
+ void _setupFCM() async {
+    // 1. INSCRIÇÃO NOS TÓPICOS GERAIS
     await FirebaseMessaging.instance.subscribeToTopic('placar_notificacoes');
     await FirebaseMessaging.instance.subscribeToTopic('noticias');
     
-    print("✅ Inscrito nos tópicos: placar_notificacoes e noticias");
+    // IMPORTANTE: Para o chat funcionar fora da sala, o usuário precisa estar 
+    // inscrito no tópico da sala específica (ex: 'sala_geral').
+    // Você pode adicionar isso aqui ou na tela onde ele escolhe a sala.
+    // await FirebaseMessaging.instance.subscribeToTopic('nome_da_sala_aqui');
 
-    // 2. OUVINTE DE MENSAGENS (Foreground)
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      if (message.notification != null) {
-        // Evita que o usuário receba notificação de uma mensagem que ele mesmo enviou no chat
-        final senderId = message.data['senderId'];
-        final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-        if (senderId != null && senderId == currentUserId) return;
+    print("✅ Inscrito nos tópicos gerais");
 
-        // Dispara a notificação local usando o seu serviço
-        NotificationService.showNotification(
-          message.notification!.title ?? 'PheliFla News',
-          message.notification!.body ?? '',
-        );
-      }
+    // 2. CONFIGURAÇÃO DE PRIORIDADE (Android)
+    // Isso garante que o sistema operacional saiba como exibir o alerta
+    NotificationSettings settings = await FirebaseMessaging.instance.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
+FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+  // 1. Pega os IDs para comparação
+  final String? senderId = message.data['senderId']?.toString();
+  final String? currentUserId = FirebaseAuth.instance.currentUser?.uid;
+
+  // 2. Pega os textos que agora estão dentro de 'data'
+  final String? tituloCustom = message.data['titulo'];
+  final String? corpoCustom = message.data['corpo'];
+
+  // 3. LOG para você conferir no console se os IDs estão batendo
+  print("🔔 Notificação via Data: Remetente $senderId | Eu: $currentUserId");
+
+  // 4. FILTRO DE AUTO-NOTIFICAÇÃO
+  if (senderId != null && currentUserId != null && senderId == currentUserId) {
+    print("🚫 Ignorando: Eu sou o remetente.");
+    return; // Mata a execução aqui
+  }
+
+  // 5. DISPARA A NOTIFICAÇÃO LOCAL (Apenas se houver dados e não for eu mesmo)
+  if (tituloCustom != null && corpoCustom != null) {
+    NotificationService.showNotification(
+      tituloCustom,
+      corpoCustom,
+    );
+  }
+});
+    
+    // 4. TRATAMENTO DE CLIQUE NA NOTIFICAÇÃO (App em Background)
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+       print("Usuário clicou na notificação!");
+       // Aqui você pode usar o Navigator para levar o usuário direto para a sala
+       // baseando-se no message.data['roomName']
     });
   }
 
