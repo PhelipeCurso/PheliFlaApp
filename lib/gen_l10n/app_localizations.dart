@@ -595,6 +595,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Subscribe now'**
   String get subscribeNow;
+
+  /// No description provided for @menuHymns.
+  ///
+  /// In en, this message translates to:
+  /// **'Chants & Hymns'**
+  String get menuHymns;
 }
 
 class _AppLocalizationsDelegate

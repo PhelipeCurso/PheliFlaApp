@@ -51,6 +51,7 @@ class ProductService {
                   : (data['precoPromocao'] as num?)?.toDouble() ?? 0.0,
           loja: data['loja'] ?? '',
           codigoLoja: data['codigoLoja'] ?? '',
+          plataforma: data['plataforma'] ??'',
         );
       }).toList();
     } catch (e) {

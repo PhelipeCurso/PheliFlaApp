@@ -12,6 +12,7 @@ class Product {
   final double? precoPromocional;
   final String? loja;
   final String codigoLoja;
+  final String plataforma;
 
   Product({
     required this.nome,
@@ -25,6 +26,7 @@ class Product {
     this.precoPromocional,
     this.loja,
     required this.codigoLoja,
+    required this.plataforma,
   });
   factory Product.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -46,6 +48,8 @@ class Product {
               : (data['precoPromocao'] as num?)?.toDouble() ?? 0.0,
       loja: data['loja'] ?? '',
       codigoLoja: data['codigoLoja'] ?? data['codigo'] ?? '',
+      plataforma: data ['plataforma']?? data['plataforma']??'',
+      
     );
   }
 }

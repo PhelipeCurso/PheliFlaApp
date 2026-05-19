@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pheli_fla_app/config_screenTheme.dart';
+import 'package:pheli_fla_app/screens/cantos_list_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
@@ -57,7 +58,8 @@ class _HomeScreenState extends State<HomeScreen> {
   // --- FUNÇÃO PARA ABRIR O SITE DE INGRESSOS ---
   Future<void> _abrirSiteIngressos() async {
     final Uri url = Uri.parse(
-        'https://ingressos.flamengo.com.br/?utm_source=siteoficial&utm_medium=popup&utm_campaign=flaxremo&utm_term=_');
+      'https://ingressos.flamengo.com.br/?utm_source=siteoficial&utm_medium=popup&utm_campaign=flaxremo&utm_term=_',
+    );
 
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       debugPrint('Não foi possível abrir o link: $url');
@@ -67,10 +69,11 @@ class _HomeScreenState extends State<HomeScreen> {
   // --- BUSCA FIRESTORE (SUAS POSTAGENS) ---
   Future<List<Map<String, String>>> _buscarNoticiasPheliFla() async {
     try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('noticias')
-          .orderBy('dataCriacao', descending: true)
-          .get();
+      final snapshot =
+          await FirebaseFirestore.instance
+              .collection('noticias')
+              .orderBy('dataCriacao', descending: true)
+              .get();
 
       return snapshot.docs.map((doc) {
         final data = doc.data();
@@ -105,7 +108,8 @@ class _HomeScreenState extends State<HomeScreen> {
           final link = linkElement?.attributes['href'] ?? '';
           if (link.contains('globo.com')) {
             final titulo = linkElement?.text.trim() ?? 'Sem título';
-            final img = element.parent?.querySelector('img')?.attributes['src'] ?? '';
+            final img =
+                element.parent?.querySelector('img')?.attributes['src'] ?? '';
             resultados.add({
               'titulo': titulo,
               'link': link.startsWith('http') ? link : 'https:$link',
@@ -127,34 +131,33 @@ class _HomeScreenState extends State<HomeScreen> {
     widget.onThemeChanged(value);
   }
 
-void _logout(BuildContext context) async {
-  try {
-    // 1. Pega o UID do usuário atual
-    final user = FirebaseAuth.instance.currentUser;
+  void _logout(BuildContext context) async {
+    try {
+      // 1. Pega o UID do usuário atual
+      final user = FirebaseAuth.instance.currentUser;
 
-    if (user != null) {
-      // 2. Avisa ao Firestore que ele está saindo
-      await FirebaseFirestore.instance
-          .collection('usuarios')
-          .doc(user.uid)
-          .update({'isOnline': false});
+      if (user != null) {
+        // 2. Avisa ao Firestore que ele está saindo
+        await FirebaseFirestore.instance
+            .collection('usuarios')
+            .doc(user.uid)
+            .update({'isOnline': false});
+      }
+
+      // 3. Agora sim, faz o logout do Firebase Auth
+      await FirebaseAuth.instance.signOut();
+
+      if (!mounted) return;
+
+      // 4. Redireciona para o login limpando a pilha de telas
+      Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
+    } catch (e) {
+      print("Erro ao sair: $e");
+      // Mesmo se der erro no update, forçamos o deslogue para não travar o usuário
+      await FirebaseAuth.instance.signOut();
+      Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
     }
-
-    // 3. Agora sim, faz o logout do Firebase Auth
-    await FirebaseAuth.instance.signOut();
-
-    if (!mounted) return;
-
-    // 4. Redireciona para o login limpando a pilha de telas
-    Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
-    
-  } catch (e) {
-    print("Erro ao sair: $e");
-    // Mesmo se der erro no update, forçamos o deslogue para não travar o usuário
-    await FirebaseAuth.instance.signOut();
-    Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -172,10 +175,7 @@ void _logout(BuildContext context) async {
         elevation: 0,
       ),
       drawer: _buildCustomDrawer(),
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _tabs,
-      ),
+      body: IndexedStack(index: _selectedIndex, children: _tabs),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
@@ -206,11 +206,16 @@ void _logout(BuildContext context) async {
 
   String _getAppBarTitle() {
     switch (_selectedIndex) {
-      case 0: return "PheliFla News";
-      case 1: return AppLocalizations.of(context)!.newsGeTitle;
-      case 2: return AppLocalizations.of(context)!.colunaTitle;
-      case 3: return AppLocalizations.of(context)!.youtubeTitle;
-      default: return "PheliFla App";
+      case 0:
+        return "PheliFla News";
+      case 1:
+        return AppLocalizations.of(context)!.newsGeTitle;
+      case 2:
+        return AppLocalizations.of(context)!.colunaTitle;
+      case 3:
+        return AppLocalizations.of(context)!.youtubeTitle;
+      default:
+        return "PheliFla App";
     }
   }
 
@@ -219,10 +224,14 @@ void _logout(BuildContext context) async {
       future: noticiasPheliFla,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: Colors.red));
+          return const Center(
+            child: CircularProgressIndicator(color: Colors.red),
+          );
         }
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(child: Text('Nenhuma notícia própria postada ainda.'));
+          return const Center(
+            child: Text('Nenhuma notícia própria postada ainda.'),
+          );
         }
 
         return ListView.builder(
@@ -253,7 +262,9 @@ void _logout(BuildContext context) async {
       future: noticiasGE,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: Colors.red));
+          return const Center(
+            child: CircularProgressIndicator(color: Colors.red),
+          );
         }
         final lista = snapshot.data ?? [];
         return ListView.builder(
@@ -272,7 +283,6 @@ void _logout(BuildContext context) async {
     );
   }
 
-  // --- DRAWER (MENU LATERAL) ---
   Widget _buildCustomDrawer() {
     final User? user = FirebaseAuth.instance.currentUser;
     return Drawer(
@@ -282,11 +292,16 @@ void _logout(BuildContext context) async {
             decoration: BoxDecoration(color: Colors.red[800]),
             currentAccountPicture: CircleAvatar(
               backgroundColor: Colors.white,
-              backgroundImage: user?.photoURL != null
-                  ? NetworkImage(user!.photoURL!)
-                  : const AssetImage('assets/images/Gaming.png') as ImageProvider,
+              backgroundImage:
+                  user?.photoURL != null
+                      ? NetworkImage(user!.photoURL!)
+                      : const AssetImage('assets/images/Gaming.png')
+                          as ImageProvider,
             ),
-            accountName: Text(widget.nomeUsuario, style: const TextStyle(fontWeight: FontWeight.bold)),
+            accountName: Text(
+              widget.nomeUsuario,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             accountEmail: Text(user?.email ?? ""),
           ),
           Expanded(
@@ -301,30 +316,69 @@ void _logout(BuildContext context) async {
                 ListTile(
                   leading: const Icon(Icons.chat),
                   title: Text(AppLocalizations.of(context)!.chat),
-                  onTap: () => Navigator.pushNamed(context, '/room-selection', arguments: widget.nomeUsuario),
+                  onTap:
+                      () => Navigator.pushNamed(
+                        context,
+                        '/room-selection',
+                        arguments: widget.nomeUsuario,
+                      ),
                 ),
                 ListTile(
                   leading: const Icon(Icons.sports_soccer),
                   title: Text(AppLocalizations.of(context)!.agendaTitle),
                   onTap: () {
                     Navigator.pop(context);
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => AgendaRubroNegraPage()));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => AgendaRubroNegraPage()),
+                    );
                   },
                 ),
+
+                // --- NOVA OPÇÃO: CANTOS E HINOS ---
+                ListTile(
+                  leading: const Icon(
+                    Icons.music_note,
+                    color: Color(0xFFC52026),
+                  ),
+                  title: Text(
+                    AppLocalizations.of(context).menuHymns,
+                  ), // Certifique-se de definir 'menuHymns' no seu ARB
+                  onTap: () {
+                    Navigator.pop(context); // Fecha o Drawer primeiro
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const CantosListScreen(),
+                      ),
+                    );
+                  },
+                ),
+
                 ListTile(
                   leading: const Icon(Icons.shopping_cart),
                   title: Text(AppLocalizations.of(context)!.store),
                   onTap: () {
                     Navigator.pop(context);
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const EscolhaLojaScreen()));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const EscolhaLojaScreen(),
+                      ),
+                    );
                   },
                 ),
-                
+
                 // --- ITEM AJUSTADO: INGRESSOS ABAIXO DA LOJA ---
                 ListTile(
-                  leading: const Icon(Icons.confirmation_number, color: Colors.red),
+                  leading: const Icon(
+                    Icons.confirmation_number,
+                    color: Colors.red,
+                  ),
                   title: Text(AppLocalizations.of(context)!.ticket),
-                  subtitle:  Text(AppLocalizations.of(context)!.buyTicketsForTheGames),
+                  subtitle: Text(
+                    AppLocalizations.of(context)!.buyTicketsForTheGames,
+                  ),
                   onTap: () {
                     Navigator.pop(context); // Fecha o Drawer
                     _abrirSiteIngressos(); // Abre o site
@@ -333,10 +387,15 @@ void _logout(BuildContext context) async {
 
                 ListTile(
                   leading: const Icon(Icons.star, color: Colors.amber),
-                  title:  Text(AppLocalizations.of(context)!.subscribeNow),
+                  title: Text(AppLocalizations.of(context)!.subscribeNow),
                   onTap: () {
                     Navigator.pop(context);
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AssinaturaPlusScreen()));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AssinaturaPlusScreen(),
+                      ),
+                    );
                   },
                 ),
                 const Divider(),
@@ -347,10 +406,11 @@ void _logout(BuildContext context) async {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => SettingsScreen(
-                          isDarkMode: isDarkMode,
-                          onThemeChanged: toggleTheme,
-                        ),
+                        builder:
+                            (context) => SettingsScreen(
+                              isDarkMode: isDarkMode,
+                              onThemeChanged: toggleTheme,
+                            ),
                       ),
                     );
                   },
@@ -401,8 +461,10 @@ class PheliFlaCard extends StatelessWidget {
                 height: 180,
                 width: double.infinity,
                 fit: BoxFit.cover,
-                placeholder: (context, url) => Container(color: Colors.grey[200]),
-                errorWidget: (context, url, error) => const Icon(Icons.broken_image),
+                placeholder:
+                    (context, url) => Container(color: Colors.grey[200]),
+                errorWidget:
+                    (context, url, error) => const Icon(Icons.broken_image),
               ),
             Padding(
               padding: const EdgeInsets.all(12.0),

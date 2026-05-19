@@ -261,4 +261,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get subscribeNow => 'Assinar agora!';
+
+  @override
+  String get menuHymns => 'Cantos e Hinos';
 }

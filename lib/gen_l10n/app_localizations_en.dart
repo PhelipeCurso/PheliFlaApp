@@ -261,4 +261,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get subscribeNow => 'Subscribe now';
+
+  @override
+  String get menuHymns => 'Chants & Hymns';
 }

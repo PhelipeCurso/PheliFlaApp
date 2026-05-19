@@ -5,6 +5,44 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/product.dart';
 import '../services/product_service.dart';
 
+// Auxiliar para gerenciar o tema e comportamento visual de cada plataforma de forma limpa
+class _VisualConfig {
+  final Color primaryColor;
+  final Color accentColor;
+  final Color chipSelectedColor;
+  final String buttonText;
+  final IconData storeIcon;
+
+  _VisualConfig({
+    required this.primaryColor,
+    required this.accentColor,
+    required this.chipSelectedColor,
+    required this.buttonText,
+    required this.storeIcon,
+  });
+
+  factory _VisualConfig.fromPlataforma(String plataforma) {
+    if (plataforma == 'mercado_livre') {
+      return _VisualConfig(
+        primaryColor: const Color(0xFFFFF159), // Amarelo Mercado Livre
+        accentColor: const Color(0xFF2D3277),  // Azul Escuro Mercado Livre
+        chipSelectedColor: const Color(0xFFFFF159).withOpacity(0.4),
+        buttonText: 'VER NO MERCADO LIVRE',
+        storeIcon: Icons.handshake_outlined,
+      );
+    } else {
+      // Padrão: Shopee
+      return _VisualConfig(
+        primaryColor: const Color(0xEEEE4D2D), // Laranja Shopee
+        accentColor: const Color(0xEEEE4D2D),
+        chipSelectedColor: const Color(0xEEEE4D2D).withOpacity(0.2),
+        buttonText: 'VER NA SHOPEE',
+        storeIcon: Icons.shopping_bag_outlined,
+      );
+    }
+  }
+}
+
 class LojaScreen extends StatefulWidget {
   const LojaScreen({
     super.key,
@@ -21,10 +59,12 @@ class LojaScreen extends StatefulWidget {
   State<LojaScreen> createState() => _LojaScreenState();
 }
 
-class _LojaScreenState extends State<LojaScreen> {
+class _LojaScreenState extends State<LojaScreen> with SingleTickerProviderStateMixin {
   late Future<List<Product>> _produtosFuture;
+  late TabController _tabController;
   
-  // Filtros selecionados
+  // Controle de Plataforma e Filtros selecionados
+  String _plataformaSelecionada = 'shopee'; // 'shopee' ou 'mercado_livre'
   String _categoriaSelecionada = 'Todos';
   String _generoSelecionado = 'Todos';
   
@@ -36,8 +76,26 @@ class _LojaScreenState extends State<LojaScreen> {
   void initState() {
     super.initState();
     _produtosFuture = _carregarDados();
-    // Mostra o aviso após o primeiro frame
+    
+    // Controlador de Abas para gerenciar a troca de Lojas (Shopee vs ML)
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) return;
+      setState(() {
+        _plataformaSelecionada = _tabController.index == 0 ? 'shopee' : 'mercado_livre';
+        // Opcional: resetar filtros ao mudar de loja para evitar conflitos de dados
+        _categoriaSelecionada = 'Todos';
+        _generoSelecionado = 'Todos';
+      });
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) => _mostrarAviso());
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<List<Product>> _carregarDados() async {
@@ -74,6 +132,8 @@ class _LojaScreenState extends State<LojaScreen> {
   @override
   Widget build(BuildContext context) {
     final local = AppLocalizations.of(context)!;
+    // Puxa a configuração visual baseada no estado atual selecionado
+    final configVis = _VisualConfig.fromPlataforma(_plataformaSelecionada);
 
     return Scaffold(
       body: FutureBuilder<List<Product>>(
@@ -87,15 +147,15 @@ class _LojaScreenState extends State<LojaScreen> {
 
           return CustomScrollView(
             slivers: [
-              // AppBar com imagem dinâmica e efeito Hero
-              _buildSliverAppBar(context),
+              // AppBar customizável que reage ao tema escolhido
+              _buildSliverAppBar(context, configVis),
 
-              // Seção de Filtros (Horizontal)
+              // Seção de Filtros (Chips adaptam a cor dinamicamente)
               SliverToBoxAdapter(
-                child: _buildFilterSection(local),
+                child: _buildFilterSection(local, configVis),
               ),
 
-              // Grid de Produtos
+              // Grid de Produtos passará o configVis adiante para os botões e detalhes
               produtosFiltrados.isEmpty
                   ? SliverFillRemaining(child: Center(child: Text(local.noProducts)))
                   : SliverPadding(
@@ -105,11 +165,12 @@ class _LojaScreenState extends State<LojaScreen> {
                           crossAxisCount: 2,
                           crossAxisSpacing: 16,
                           mainAxisSpacing: 16,
-                          childAspectRatio: 0.62,
+                          childAspectRatio: 0.60, // Ajustado levemente para acomodar textos customizados longos
                         ),
                         delegate: SliverChildBuilderDelegate(
                           (context, index) => _ProductCard(
                             item: produtosFiltrados[index],
+                            configVis: configVis,
                             onTap: () => _abrirLink(produtosFiltrados[index].url),
                           ),
                           childCount: produtosFiltrados.length,
@@ -123,13 +184,24 @@ class _LojaScreenState extends State<LojaScreen> {
     );
   }
 
-  Widget _buildSliverAppBar(BuildContext context) {
+  Widget _buildSliverAppBar(BuildContext context, _VisualConfig config) {
+    final isMl = _plataformaSelecionada == 'mercado_livre';
+
     return SliverAppBar(
-      expandedHeight: 200,
+      expandedHeight: 240,
       pinned: true,
-      backgroundColor: Colors.red[900],
+      // Se for ML, o título deve possuir boa legibilidade com fundo amarelo escuro/azul
+      backgroundColor: config.primaryColor,
+      iconTheme: IconThemeData(color: isMl ? config.accentColor : Colors.white),
       flexibleSpace: FlexibleSpaceBar(
-        title: Text(widget.Loja, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        titlePadding: const EdgeInsets.only(left: 56, bottom: 62),
+        title: Text(
+          widget.Loja, 
+          style: TextStyle(
+            fontWeight: FontWeight.bold, 
+            color: isMl ? config.accentColor : Colors.white,
+          ),
+        ),
         background: widget.heroTag != null 
           ? Hero(
               tag: widget.heroTag!,
@@ -146,21 +218,39 @@ class _LojaScreenState extends State<LojaScreen> {
             )
           : null,
       ),
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(48),
+        child: Container(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          child: TabBar(
+            controller: _tabController,
+            indicatorColor: config.accentColor,
+            labelColor: config.accentColor,
+            unselectedLabelColor: Colors.grey,
+            indicatorWeight: 3,
+            labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            tabs: const [
+              Tab(text: "🔥 SHOPEE"),
+              Tab(text: "⚡ MERCADO LIVRE"),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
-  Widget _buildFilterSection(AppLocalizations local) {
+  Widget _buildFilterSection(AppLocalizations local, _VisualConfig config) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildFilterRow(categorias, _categoriaSelecionada, (val) => setState(() => _categoriaSelecionada = val)),
-        _buildFilterRow(generos, _generoSelecionado, (val) => setState(() => _generoSelecionado = val)),
+        _buildFilterRow(categorias, _categoriaSelecionada, config, (val) => setState(() => _categoriaSelecionada = val)),
+        _buildFilterRow(generos, _generoSelecionado, config, (val) => setState(() => _generoSelecionado = val)),
         const Divider(height: 1),
       ],
     );
   }
 
-  Widget _buildFilterRow(List<String> items, String selected, Function(String) onSelect) {
+  Widget _buildFilterRow(List<String> items, String selected, _VisualConfig config, Function(String) onSelect) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -168,15 +258,15 @@ class _LojaScreenState extends State<LojaScreen> {
         children: items.map((item) {
           final isSelected = selected == item;
           return Padding(
-            padding: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.only(right: 8), // Corrigido aqui!
             child: FilterChip(
               label: Text(item),
               selected: isSelected,
               onSelected: (_) => onSelect(item),
-              selectedColor: Colors.red[100],
-              checkmarkColor: Colors.red[900],
+              selectedColor: config.chipSelectedColor,
+              checkmarkColor: config.accentColor,
               labelStyle: TextStyle(
-                color: isSelected ? Colors.red[900] : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black87),
+                color: isSelected ? config.accentColor : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black87),
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
@@ -188,9 +278,14 @@ class _LojaScreenState extends State<LojaScreen> {
 
   List<Product> _filtrarProdutos(List<Product> produtos) {
     return produtos.where((p) {
+      // FILTRO 1: Garante que só exiba itens da plataforma que a Aba está mostrando
+      final plataformaOk = p.plataforma == _plataformaSelecionada;
+      
+      // FILTROS 2 e 3: Filtros existentes criados por você
       final catOk = _categoriaSelecionada == 'Todos' || p.categoria == _categoriaSelecionada;
       final genOk = _generoSelecionado == 'Todos' || p.genero == _generoSelecionado;
-      return catOk && genOk;
+      
+      return plataformaOk && catOk && genOk;
     }).toList();
   }
 
@@ -210,9 +305,14 @@ class _LojaScreenState extends State<LojaScreen> {
 
 class _ProductCard extends StatelessWidget {
   final Product item;
+  final _VisualConfig configVis;
   final VoidCallback onTap;
 
-  const _ProductCard({required this.item, required this.onTap});
+  const _ProductCard({
+    required this.item, 
+    required this.configVis, 
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -236,7 +336,7 @@ class _ProductCard extends StatelessWidget {
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
                   child: CachedNetworkImage(
                     imageUrl: item.imagem,
-                    height: 160,
+                    height: 145,
                     width: double.infinity,
                     fit: BoxFit.cover,
                     placeholder: (context, url) => Container(color: Colors.grey[200]),
@@ -249,7 +349,7 @@ class _ProductCard extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: item.tag == 'Promoção' ? Colors.green : Colors.red[900],
+                        color: item.tag == 'Promoção' ? Colors.green : const Color(0xFFCB1B1B), // Fallback Vermelho Fla
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(item.tag, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
@@ -260,46 +360,54 @@ class _ProductCard extends StatelessWidget {
             
             // Info do Produto
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     item.nome,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   if (hasDiscount) ...[
                     Text(
                       'R\$ ${item.preco?.toStringAsFixed(2)}',
-                      style: const TextStyle(fontSize: 11, color: Colors.grey, decoration: TextDecoration.lineThrough),
+                      style: const TextStyle(fontSize: 10, color: Colors.grey, decoration: TextDecoration.lineThrough),
                     ),
                     Text(
                       'R\$ ${item.precoPromocional?.toStringAsFixed(2)}',
-                      style: TextStyle(fontSize: 15, color: Colors.red[900], fontWeight: FontWeight.bold),
+                      style: TextStyle(fontSize: 14, color: configVis.accentColor, fontWeight: FontWeight.bold),
                     ),
                   ] else
                     Text(
                       'R\$ ${item.preco?.toStringAsFixed(2)}',
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                     ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   
-                  // Botão de ação visual
+                  // Botão de ação visual injetando as cores e textos da plataforma de forma profissional
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
-                      border: Border.all(color: Colors.red.shade900!),
+                      color: configVis.accentColor,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Center(
-                      child: Text(
-                        'VER NA LOJA',
-                        style: TextStyle(color: Colors.red[900], fontSize: 10, fontWeight: FontWeight.bold),
-                      ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(configVis.storeIcon, color: Colors.white, size: 12),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            configVis.buttonText,
+                            style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
