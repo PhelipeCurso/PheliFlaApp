@@ -5,7 +5,22 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/product.dart';
 import '../services/product_service.dart';
 
-// Auxiliar para gerenciar o tema e comportamento visual de cada plataforma de forma limpa
+// ─────────────────────────────────────────────────────────────────────────────
+// ATENÇÃO — Product model
+// Adicione o campo abaixo em lib/models/product.dart:
+//
+//   final bool entregaFull;
+//
+//   // No construtor:
+//   this.entregaFull = false,
+//
+//   // No fromMap / fromFirestore:
+//   entregaFull: (map['entregaFull'] as bool?) ?? false,
+//
+//   // No toMap (se houver):
+//   'entregaFull': entregaFull,
+// ─────────────────────────────────────────────────────────────────────────────
+
 class _VisualConfig {
   final Color primaryColor;
   final Color accentColor;
@@ -24,16 +39,15 @@ class _VisualConfig {
   factory _VisualConfig.fromPlataforma(String plataforma) {
     if (plataforma == 'mercado_livre') {
       return _VisualConfig(
-        primaryColor: const Color(0xFFFFF159), // Amarelo Mercado Livre
-        accentColor: const Color(0xFF2D3277),  // Azul Escuro Mercado Livre
+        primaryColor: const Color(0xFFFFF159),
+        accentColor: const Color(0xFF2D3277),
         chipSelectedColor: const Color(0xFFFFF159).withOpacity(0.4),
         buttonText: 'VER NO MERCADO LIVRE',
         storeIcon: Icons.handshake_outlined,
       );
     } else {
-      // Padrão: Shopee
       return _VisualConfig(
-        primaryColor: const Color(0xEEEE4D2D), // Laranja Shopee
+        primaryColor: const Color(0xEEEE4D2D),
         accentColor: const Color(0xEEEE4D2D),
         chipSelectedColor: const Color(0xEEEE4D2D).withOpacity(0.2),
         buttonText: 'VER NA SHOPEE',
@@ -41,6 +55,15 @@ class _VisualConfig {
       );
     }
   }
+}
+
+// Cores e constantes do badge Full — centralizadas para fácil manutenção
+abstract class _FullBadgeStyle {
+  static const Color bgStart      = Color(0xFFFFD000);
+  static const Color bgEnd        = Color(0xFFFF9900);
+  static const Color textColor    = Color(0xFF1A1200);
+  static const Color chipSelected = Color(0xFFFFD000);
+  static const Color chipCheck    = Color(0xFF1A1200);
 }
 
 class LojaScreen extends StatefulWidget {
@@ -59,33 +82,31 @@ class LojaScreen extends StatefulWidget {
   State<LojaScreen> createState() => _LojaScreenState();
 }
 
-class _LojaScreenState extends State<LojaScreen> with SingleTickerProviderStateMixin {
-  late Future<List<Product>> _produtosFuture;
+class _LojaScreenState extends State<LojaScreen>
+    with SingleTickerProviderStateMixin {
+  late Stream<List<Product>> _produtosStream;
   late TabController _tabController;
-  
-  // Controle de Plataforma e Filtros selecionados
-  String _plataformaSelecionada = 'shopee'; // 'shopee' ou 'mercado_livre'
-  String _categoriaSelecionada = 'Todos';
-  String _generoSelecionado = 'Todos';
-  
-  // Listas dinâmicas vinda do banco
-  List<String> categorias = ['Todos'];
-  List<String> generos = ['Todos'];
+
+  String _plataformaSelecionada = 'shopee';
+  String _categoriaSelecionada  = 'Todos';
+  String _generoSelecionado     = 'Todos';
+  // Filtro Full: false = todos, true = somente Full
+  bool   _filtroFullAtivo       = false;
 
   @override
   void initState() {
     super.initState();
-    _produtosFuture = _carregarDados();
-    
-    // Controlador de Abas para gerenciar a troca de Lojas (Shopee vs ML)
+    _produtosStream = ProductService.streamProdutos(Loja: widget.Loja);
+
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) return;
       setState(() {
         _plataformaSelecionada = _tabController.index == 0 ? 'shopee' : 'mercado_livre';
-        // Resetando filtros ao mudar de aba para evitar conflitos de dados entre plataformas
+        // Reseta todos os filtros ao trocar de plataforma
         _categoriaSelecionada = 'Todos';
-        _generoSelecionado = 'Todos';
+        _generoSelecionado    = 'Todos';
+        _filtroFullAtivo      = false;
       });
     });
 
@@ -96,17 +117,6 @@ class _LojaScreenState extends State<LojaScreen> with SingleTickerProviderStateM
   void dispose() {
     _tabController.dispose();
     super.dispose();
-  }
-
-  Future<List<Product>> _carregarDados() async {
-    final produtos = await ProductService.fetchProdutos(Loja: widget.Loja);
-    
-    setState(() {
-      categorias = ['Todos', ...produtos.map((p) => p.categoria).toSet()];
-      generos = ['Todos', ...produtos.map((p) => p.genero).toSet()];
-    });
-    
-    return produtos;
   }
 
   void _mostrarAviso() {
@@ -121,9 +131,15 @@ class _LojaScreenState extends State<LojaScreen> with SingleTickerProviderStateM
             Text('Atenção'),
           ],
         ),
-        content: const Text('Os valores podem variar no momento da compra. Confirme o preço final no aplicativo da loja.'),
+        content: const Text(
+          'Os valores podem variar no momento da compra. '
+          'Confirme o preço final no aplicativo da loja.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('ENTENDI')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('ENTENDI'),
+          ),
         ],
       ),
     );
@@ -131,13 +147,12 @@ class _LojaScreenState extends State<LojaScreen> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    final local = AppLocalizations.of(context)!;
-    // Puxa a configuração visual baseada no estado atual selecionado
+    final local     = AppLocalizations.of(context)!;
     final configVis = _VisualConfig.fromPlataforma(_plataformaSelecionada);
 
     return Scaffold(
-      body: FutureBuilder<List<Product>>(
-        future: _produtosFuture,
+      body: StreamBuilder<List<Product>>(
+        stream: _produtosStream,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -145,26 +160,65 @@ class _LojaScreenState extends State<LojaScreen> with SingleTickerProviderStateM
           if (snapshot.hasError) {
             return const Center(child: Text('Erro ao carregar produtos.'));
           }
-          
-          final produtosFiltrados = _filtrarProdutos(snapshot.data ?? []);
+
+          final todosProdutos = snapshot.data ?? [];
+
+          final categoriasDinamicas = [
+            'Todos',
+            ...todosProdutos.map((p) => p.categoria).toSet(),
+          ];
+          final generosDinamicos = [
+            'Todos',
+            ...todosProdutos.map((p) => p.genero).toSet(),
+          ];
+
+          // Verifica se há ao menos 1 produto Full na plataforma ativa para
+          // decidir se o chip de filtro deve aparecer
+          final temProdutoFull = todosProdutos.any(
+            (p) => p.plataforma == _plataformaSelecionada && p.entregaFull,
+          );
+
+          final produtosFiltrados = _filtrarProdutos(todosProdutos);
 
           return CustomScrollView(
             slivers: [
-              // AppBar customizável que reage ao tema escolhido da plataforma
               _buildSliverAppBar(context, configVis),
 
-              // Seção de Filtros (Chips adaptam a cor dinamicamente)
               SliverToBoxAdapter(
-                child: _buildFilterSection(local, configVis),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Filtros de categoria e gênero
+                    _buildFilterRow(
+                      categoriasDinamicas,
+                      _categoriaSelecionada,
+                      configVis,
+                      (val) => setState(() => _categoriaSelecionada = val),
+                    ),
+                    _buildFilterRow(
+                      generosDinamicos,
+                      _generoSelecionado,
+                      configVis,
+                      (val) => setState(() => _generoSelecionado = val),
+                    ),
+
+                    // Filtro Full — só exibe se houver produtos Full nessa plataforma
+                    if (temProdutoFull) _buildFullFilterRow(),
+
+                    const Divider(height: 1),
+                  ],
+                ),
               ),
 
-              // Grid de Produtos injetando configVis para os botões e detalhes harmônicos
               produtosFiltrados.isEmpty
-                  ? SliverFillRemaining(child: Center(child: Text(local.noProducts)))
+                  ? SliverFillRemaining(
+                      child: Center(child: Text(local.noProducts)),
+                    )
                   : SliverPadding(
                       padding: const EdgeInsets.all(16),
                       sliver: SliverGrid(
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
                           crossAxisSpacing: 16,
                           mainAxisSpacing: 16,
@@ -174,7 +228,8 @@ class _LojaScreenState extends State<LojaScreen> with SingleTickerProviderStateM
                           (context, index) => _ProductCard(
                             item: produtosFiltrados[index],
                             configVis: configVis,
-                            onTap: () => _abrirLink(produtosFiltrados[index].url),
+                            onTap: () =>
+                                _abrirLink(produtosFiltrados[index].url),
                           ),
                           childCount: produtosFiltrados.length,
                         ),
@@ -187,6 +242,44 @@ class _LojaScreenState extends State<LojaScreen> with SingleTickerProviderStateM
     );
   }
 
+  // ── Filtro Full ─────────────────────────────────────────────────────────────
+  // Chip independente com identidade visual própria (âmbar), separado dos
+  // demais para deixar claro ao usuário que é um filtro de entrega, não de
+  // categoria.
+  Widget _buildFullFilterRow() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+      child: Row(
+        children: [
+          FilterChip(
+            avatar: const Icon(Icons.bolt_rounded, size: 16, color: _FullBadgeStyle.textColor),
+            label: const Text('Entrega Full'),
+            selected: _filtroFullAtivo,
+            onSelected: (_) =>
+                setState(() => _filtroFullAtivo = !_filtroFullAtivo),
+            selectedColor: _FullBadgeStyle.chipSelected,
+            checkmarkColor: _FullBadgeStyle.chipCheck,
+            backgroundColor: Theme.of(context).brightness == Brightness.dark
+                ? Colors.grey[800]
+                : Colors.grey[200],
+            labelStyle: TextStyle(
+              color: _filtroFullAtivo
+                  ? _FullBadgeStyle.textColor
+                  : (Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white70
+                      : Colors.black87),
+              fontWeight:
+                  _filtroFullAtivo ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Demais builders ─────────────────────────────────────────────────────────
+
   Widget _buildSliverAppBar(BuildContext context, _VisualConfig config) {
     final isMl = _plataformaSelecionada == 'mercado_livre';
 
@@ -194,31 +287,32 @@ class _LojaScreenState extends State<LojaScreen> with SingleTickerProviderStateM
       expandedHeight: 240,
       pinned: true,
       backgroundColor: config.primaryColor,
-      iconTheme: IconThemeData(color: isMl ? config.accentColor : Colors.white),
+      iconTheme:
+          IconThemeData(color: isMl ? config.accentColor : Colors.white),
       flexibleSpace: FlexibleSpaceBar(
         titlePadding: const EdgeInsets.only(left: 56, bottom: 62),
         title: Text(
-          widget.Loja, 
+          widget.Loja,
           style: TextStyle(
-            fontWeight: FontWeight.bold, 
+            fontWeight: FontWeight.bold,
             color: isMl ? config.accentColor : Colors.white,
           ),
         ),
-        background: widget.heroTag != null 
-          ? Hero(
-              tag: widget.heroTag!,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.asset(
-                    widget.bannerImage ?? 'assets/images/loja_banner.png',
-                    fit: BoxFit.cover,
-                  ),
-                  Container(color: Colors.black.withOpacity(0.4)),
-                ],
-              ),
-            )
-          : null,
+        background: widget.heroTag != null
+            ? Hero(
+                tag: widget.heroTag!,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.asset(
+                      widget.bannerImage ?? 'assets/images/loja_banner.png',
+                      fit: BoxFit.cover,
+                    ),
+                    Container(color: Colors.black.withOpacity(0.4)),
+                  ],
+                ),
+              )
+            : null,
       ),
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(48),
@@ -230,7 +324,8 @@ class _LojaScreenState extends State<LojaScreen> with SingleTickerProviderStateM
             labelColor: config.accentColor,
             unselectedLabelColor: Colors.grey,
             indicatorWeight: 3,
-            labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            labelStyle: const TextStyle(
+                fontWeight: FontWeight.bold, fontSize: 13),
             tabs: const [
               Tab(text: "🔥 SHOPEE"),
               Tab(text: "⚡ MERCADO LIVRE"),
@@ -241,18 +336,12 @@ class _LojaScreenState extends State<LojaScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildFilterSection(AppLocalizations local, _VisualConfig config) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildFilterRow(categorias, _categoriaSelecionada, config, (val) => setState(() => _categoriaSelecionada = val)),
-        _buildFilterRow(generos, _generoSelecionado, config, (val) => setState(() => _generoSelecionado = val)),
-        const Divider(height: 1),
-      ],
-    );
-  }
-
-  Widget _buildFilterRow(List<String> items, String selected, _VisualConfig config, Function(String) onSelect) {
+  Widget _buildFilterRow(
+    List<String> items,
+    String selected,
+    _VisualConfig config,
+    Function(String) onSelect,
+  ) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -268,8 +357,13 @@ class _LojaScreenState extends State<LojaScreen> with SingleTickerProviderStateM
               selectedColor: config.chipSelectedColor,
               checkmarkColor: config.accentColor,
               labelStyle: TextStyle(
-                color: isSelected ? config.accentColor : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black87),
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: isSelected
+                    ? config.accentColor
+                    : (Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white70
+                        : Colors.black87),
+                fontWeight:
+                    isSelected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
           );
@@ -280,14 +374,15 @@ class _LojaScreenState extends State<LojaScreen> with SingleTickerProviderStateM
 
   List<Product> _filtrarProdutos(List<Product> produtos) {
     return produtos.where((p) {
-      // FILTRO 1: Filtra estritamente a plataforma ativa na TabBar correspondente
       final plataformaOk = p.plataforma == _plataformaSelecionada;
-      
-      // FILTROS 2 e 3: Filtros de categoria e gênero
-      final catOk = _categoriaSelecionada == 'Todos' || p.categoria == _categoriaSelecionada;
-      final genOk = _generoSelecionado == 'Todos' || p.genero == _generoSelecionado;
-      
-      return plataformaOk && catOk && genOk;
+      final catOk = _categoriaSelecionada == 'Todos' ||
+          p.categoria == _categoriaSelecionada;
+      final genOk =
+          _generoSelecionado == 'Todos' || p.genero == _generoSelecionado;
+      // Quando o filtro Full está ativo, exibe apenas produtos Full
+      final fullOk = !_filtroFullAtivo || p.entregaFull;
+
+      return plataformaOk && catOk && genOk && fullOk;
     }).toList();
   }
 
@@ -301,24 +396,29 @@ class _LojaScreenState extends State<LojaScreen> with SingleTickerProviderStateM
   }
 
   void _mostrarErro(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(msg)));
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Card de produto
+// ─────────────────────────────────────────────────────────────────────────────
 class _ProductCard extends StatelessWidget {
   final Product item;
   final _VisualConfig configVis;
   final VoidCallback onTap;
 
   const _ProductCard({
-    required this.item, 
-    required this.configVis, 
+    required this.item,
+    required this.configVis,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final hasDiscount = (item.precoPromocional ?? 0) > 0 && (item.precoPromocional ?? 0) < (item.preco ?? 0);
+    final hasDiscount = (item.precoPromocional ?? 0) > 0 &&
+        (item.precoPromocional ?? 0) < (item.preco ?? 0);
 
     return GestureDetector(
       onTap: item.url.isNotEmpty ? onTap : null,
@@ -326,41 +426,67 @@ class _ProductCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(18),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Imagem com Badge de Tag
+            // ── Imagem + badges ──────────────────────────────────────────────
             Stack(
               children: [
                 ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(18)),
                   child: CachedNetworkImage(
                     imageUrl: item.imagem,
                     height: 145,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(color: Colors.grey[200]),
-                    errorWidget: (context, url, error) => const Icon(Icons.broken_image),
+                    placeholder: (context, url) =>
+                        Container(color: Colors.grey[200]),
+                    errorWidget: (context, url, error) =>
+                        const Icon(Icons.broken_image),
                   ),
                 ),
+
+                // Badge de tag existente (Promoção etc.) — top-left
                 if (item.tag.isNotEmpty)
                   Positioned(
-                    top: 8, left: 8,
+                    top: 8,
+                    left: 8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: item.tag == 'Promoção' ? Colors.green : const Color(0xFFCB1B1B),
+                        color: item.tag == 'Promoção'
+                            ? Colors.green
+                            : const Color(0xFFCB1B1B),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text(item.tag, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                      child: Text(
+                        item.tag,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
+
+                // Badge Full — bottom-right, oposto ao badge de tag
+                // para não colidir quando ambos estão presentes.
+                if (item.entregaFull) const _FullBadge(),
               ],
             ),
-            
-            // Info do Produto
+
+            // ── Info do produto ──────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.all(10),
               child: Column(
@@ -368,7 +494,8 @@ class _ProductCard extends StatelessWidget {
                 children: [
                   Text(
                     item.nome,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 12),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -376,20 +503,29 @@ class _ProductCard extends StatelessWidget {
                   if (hasDiscount) ...[
                     Text(
                       'R\$ ${item.preco?.toStringAsFixed(2)}',
-                      style: const TextStyle(fontSize: 10, color: Colors.grey, decoration: TextDecoration.lineThrough),
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: Colors.grey,
+                        decoration: TextDecoration.lineThrough,
+                      ),
                     ),
                     Text(
                       'R\$ ${item.precoPromocional?.toStringAsFixed(2)}',
-                      style: TextStyle(fontSize: 14, color: configVis.accentColor, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: configVis.accentColor,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ] else
                     Text(
                       'R\$ ${item.preco?.toStringAsFixed(2)}',
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.bold),
                     ),
                   const SizedBox(height: 8),
-                  
-                  // Botão adaptativo com injeção das propriedades do _VisualConfig
+
+                  // Botão de ação
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 8),
@@ -400,12 +536,17 @@ class _ProductCard extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(configVis.storeIcon, color: Colors.white, size: 12),
+                        Icon(configVis.storeIcon,
+                            color: Colors.white, size: 12),
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
                             configVis.buttonText,
-                            style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -413,6 +554,59 @@ class _ProductCard extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Badge Full — widget isolado para fácil reutilização em outras telas
+// ─────────────────────────────────────────────────────────────────────────────
+class _FullBadge extends StatelessWidget {
+  const _FullBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      bottom: 8,
+      right: 8,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [_FullBadgeStyle.bgStart, _FullBadgeStyle.bgEnd],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: _FullBadgeStyle.bgEnd.withOpacity(0.45),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.bolt_rounded,
+              size: 11,
+              color: _FullBadgeStyle.textColor,
+            ),
+            SizedBox(width: 2),
+            Text(
+              'FULL',
+              style: TextStyle(
+                color: _FullBadgeStyle.textColor,
+                fontSize: 9,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.6,
               ),
             ),
           ],

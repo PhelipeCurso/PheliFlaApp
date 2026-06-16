@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pheli_fla_app/gen_l10n/app_localizations.dart';
+import 'package:pheli_fla_app/screens/about_screen.dart';
 import 'package:provider/provider.dart';
 import '../locale_provider.dart'; 
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 class SettingsScreen extends StatefulWidget {
   final bool isDarkMode;
@@ -237,6 +239,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           
           const Divider(height: 40),
+          // ── NOVO BOTÃO: CLIQUE PARA IR PARA A TELA SOBRE ──
+          ListTile(
+            title: const Text("Sobre o App e Fontes"),
+            subtitle: const Text("Informações de contato do desenvolvedor e termos"),
+            leading: const Icon(Icons.badge_outlined, color: Colors.blue),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AboutScreen()),
+              );
+            },
+          ),
           ListTile(
             title: Text(s.appVersion),
             subtitle: Text(_version),

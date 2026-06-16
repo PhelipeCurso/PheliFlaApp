@@ -7,6 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' as htmlParser;
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Seus imports
 import 'package:pheli_fla_app/gen_l10n/app_localizations.dart';
@@ -82,6 +83,8 @@ class _HomeScreenState extends State<HomeScreen> {
           'link': data['id']?.toString() ?? '',
           'imagem': data['imagemUrl']?.toString() ?? '',
           'conteudo': data['conteudo']?.toString() ?? '',
+          // --- ADICIONADO: BUSCA DO CAMPO DE AUTORIA ---
+          'autor': data['autor']?.toString() ?? 'Redação PheliFla',
         };
       }).toList();
     } catch (e) {
@@ -335,17 +338,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
 
-                // --- NOVA OPÇÃO: CANTOS E HINOS ---
+                // --- ITEM: CANTOS E HINOS ---
                 ListTile(
                   leading: const Icon(
                     Icons.music_note,
                     color: Color(0xFFC52026),
                   ),
                   title: Text(
-                    AppLocalizations.of(context).menuHymns,
-                  ), // Certifique-se de definir 'menuHymns' no seu ARB
+                    AppLocalizations.of(context)!.menuHymns,
+                  ),
                   onTap: () {
-                    Navigator.pop(context); // Fecha o Drawer primeiro
+                    Navigator.pop(context);
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -353,6 +356,36 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     );
                   },
+                ),
+
+                // --- NOVA SEÇÃO RETRÁTIL: GAMES ---
+                ExpansionTile(
+                  leading: const Icon(Icons.sports_esports, color: Colors.amber),
+                  title: const Text(
+                    'Games',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  iconColor: Colors.red[800],
+                  collapsedIconColor: Colors.grey,
+                  childrenPadding: const EdgeInsets.only(left: 15), // Descala as sub-opções para a direita
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.emoji_events, color: Colors.red),
+                      title: const Text('Bolão PheliFla'),
+                      onTap: () {
+                        Navigator.pop(context); // Fecha o menu lateral
+                        Navigator.pushNamed(context, '/bolao');
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.local_fire_department, color: Colors.orange),
+                      title: const Text('Quiz Diário'),
+                      onTap: () {
+                        Navigator.pop(context); // Fecha o menu lateral
+                        Navigator.pushNamed(context, '/quiz');
+                      },
+                    ),
+                  ],
                 ),
 
                 ListTile(
@@ -380,8 +413,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     AppLocalizations.of(context)!.buyTicketsForTheGames,
                   ),
                   onTap: () {
-                    Navigator.pop(context); // Fecha o Drawer
-                    _abrirSiteIngressos(); // Abre o site
+                    Navigator.pop(context);
+                    _abrirSiteIngressos();
                   },
                 ),
 

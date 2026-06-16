@@ -63,6 +63,9 @@ class ChatService {
       await _firestore.collection('salas').doc(roomName).update({
         'usuarios': FieldValue.arrayUnion([uid]),
       });
+
+      // Aproveita a entrada para limpar usuários inativos da sala
+      limparUsuariosInativos(roomName);
     }
   }
 
@@ -83,6 +86,61 @@ class ChatService {
     }
   }
 
+  // --- ATUALIZAR STATUS DE ATIVIDADE ---
+  Future<void> atualizarAtividade(String roomName) async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      await _firestore
+          .collection('chats')
+          .doc(roomName)
+          .collection('usersOnline')
+          .doc(user.uid)
+          .update({
+            'lastSeen': FieldValue.serverTimestamp(),
+          });
+    }
+  }
+
+  // --- REMOVER USUÁRIOS INATIVOS (MAIS DE 5 MINUTOS) ---
+  Future<void> limparUsuariosInativos(String roomName) async {
+    try {
+      // Define o ponto de corte (Tempo atual menos 5 minutos)
+      final limiteInatividade = DateTime.now().subtract(const Duration(minutes: 5));
+      
+      // Busca usuários cujo 'lastSeen' seja anterior ao limite de 5 minutos
+      final snapshot = await _firestore
+          .collection('chats')
+          .doc(roomName)
+          .collection('usersOnline')
+          .where('lastSeen', isLessThan: limiteInatividade)
+          .get();
+
+      if (snapshot.docs.isEmpty) return;
+
+      final WriteBatch batch = _firestore.batch();
+      List<String> uidsRemover = [];
+
+      for (var doc in snapshot.docs) {
+        uidsRemover.add(doc.id);
+        // Adiciona a deleção do documento de usersOnline ao lote
+        batch.delete(doc.reference);
+      }
+
+      // Executa a remoção do lote no Firestore
+      await batch.commit();
+
+      // Atualiza o array da coleção 'salas' removendo todos esses IDs inativos de uma vez
+      if (uidsRemover.isNotEmpty) {
+        await _firestore.collection('salas').doc(roomName).update({
+          'usuarios': FieldValue.arrayRemove(uidsRemover),
+        });
+        print("${uidsRemover.length} usuários inativos foram removidos da sala $roomName.");
+      }
+    } catch (e) {
+      print("Erro ao limpar usuários inativos: $e");
+    }
+  }
+
   // --- ENVIO DE MENSAGENS DE ÁUDIO ATUALIZADO ---
 
   Future<void> enviarAudio(
@@ -97,7 +155,6 @@ class ChatService {
     try {
       final File audioFile = File(filePath);
 
-      // Validação básica: verificar se o arquivo realmente existe antes de tentar o upload
       if (!await audioFile.exists()) {
         print("Erro: Arquivo de áudio não encontrado no caminho local.");
         return;
@@ -106,14 +163,11 @@ class ChatService {
       final String fileName =
           'audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
 
-      // 1. Definir os METADADOS (Isso resolve o erro 403 das suas regras)
       final SettableMetadata metadata = SettableMetadata(
-        contentType:
-            'audio/m4a', // Especifica que é um áudio para satisfazer a regra .matches('audio/.*')
+        contentType: 'audio/m4a',
         customMetadata: {'userId': user.uid},
       );
 
-      // 2. Referência no Storage
       final Reference ref = _storage
           .ref()
           .child('chats')
@@ -121,10 +175,8 @@ class ChatService {
           .child('audios')
           .child(fileName);
 
-      // 3. Upload com metadados
       final UploadTask uploadTask = ref.putFile(audioFile, metadata);
 
-      // Opcional: Log de progresso para acompanhar no console
       uploadTask.snapshotEvents.listen((taskSnapshot) {
         print(
           "Upload progresso: ${(taskSnapshot.bytesTransferred / taskSnapshot.totalBytes) * 100}%",
@@ -132,11 +184,8 @@ class ChatService {
       });
 
       final TaskSnapshot snapshot = await uploadTask;
-
-      // 4. Obter URL pública
       final String audioUrl = await snapshot.ref.getDownloadURL();
 
-      // 5. Salvar registro no Firestore
       await _firestore
           .collection('chats')
           .doc(roomName)
@@ -151,6 +200,10 @@ class ChatService {
             'photoUrl': photoUrl,
           });
 
+      // --- ATUALIZA E LIMPA INATIVOS ---
+      await atualizarAtividade(roomName);
+      limparUsuariosInativos(roomName);
+
       print("Áudio enviado com sucesso para a sala $roomName!");
     } catch (e) {
       print("Erro no ChatService ao enviar áudio: $e");
@@ -158,6 +211,7 @@ class ChatService {
     }
   }
 
+  // --- ENVIO DE MENSAGEM DE TEXTO ---
   Future<void> enviarMensagem(String roomName, String text, String nomeUsuario, String photoUrl) async {
     final user = _auth.currentUser;
     if (user == null) return;
@@ -174,5 +228,9 @@ class ChatService {
           'userName': user.displayName ?? nomeUsuario,
           'photoUrl': photoUrl,
         });
+
+    // --- ATUALIZA E LIMPA INATIVOS ---
+    await atualizarAtividade(roomName);
+    limparUsuariosInativos(roomName);
   }
 }

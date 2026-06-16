@@ -1,11 +1,56 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart'; // Importação do SDK
 import '../models/game.dart';
 
-class GameDetailsTab extends StatelessWidget {
+class GameDetailsTab extends StatefulWidget {
   final Game game;
 
   const GameDetailsTab({Key? key, required this.game}) : super(key: key);
+
+  @override
+  State<GameDetailsTab> createState() => _GameDetailsTabState();
+}
+
+class _GameDetailsTabState extends State<GameDetailsTab> {
+  BannerAd? _bannerAd;
+  bool _isBannerLoaded = false;
+
+  // IMPORTANTE: ID de teste oficial do Google para Banners.
+  // Substitua pelo seu ID real gerado no AdMob apenas quando subir para a loja.
+  final String _adUnitId = 'ca-app-pub-3940256099942544/6300978111';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBanner();
+  }
+
+  /// Inicializa e carrega o anúncio
+  void _loadBanner() {
+    _bannerAd = BannerAd(
+      adUnitId: _adUnitId,
+      request: const AdRequest(),
+      size: AdSize.banner,
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          setState(() {
+            _isBannerLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (ad, err) {
+          debugPrint('Falha ao carregar o banner: $err');
+          ad.dispose();
+        },
+      ),
+    )..load();
+  }
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose(); // Destrói o anúncio ao sair da tela para liberar memória
+    super.dispose();
+  }
 
   /// FUNÇÃO MELHORADA: Normaliza o nome removendo acentos e espaços
   String _normalizeStadiumId(String text) {
@@ -24,10 +69,7 @@ class GameDetailsTab extends StatelessWidget {
   }
 
   Future<DocumentSnapshot> _getStadiumData() async {
-    // Agora "Maracanã" vira "Maracana", garantindo que encontre no Firebase
-    String stadiumId = _normalizeStadiumId(game.local);
-    
-    // Log para você conferir no Debug Console se o ID está correto
+    String stadiumId = _normalizeStadiumId(widget.game.local);
     debugPrint("ID Gerado para busca: $stadiumId");
 
     return await FirebaseFirestore.instance
@@ -36,56 +78,65 @@ class GameDetailsTab extends StatelessWidget {
         .get();
   }
 
-@override
-Widget build(BuildContext context) {
-  final bool isDark = Theme.of(context).brightness == Brightness.dark;
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
-  return FutureBuilder<DocumentSnapshot>(
-    future: _getStadiumData(),
-    builder: (context, snapshot) {
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return const Center(child: CircularProgressIndicator(color: Colors.red));
-      }
+    return FutureBuilder<DocumentSnapshot>(
+      future: _getStadiumData(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator(color: Colors.red));
+        }
 
-      Map<String, dynamic> stadiumData = {};
-      if (snapshot.hasData && snapshot.data!.exists) {
-        stadiumData = snapshot.data!.data() as Map<String, dynamic>;
-      }
+        Map<String, dynamic> stadiumData = {};
+        if (snapshot.hasData && snapshot.data!.exists) {
+          stadiumData = snapshot.data!.data() as Map<String, dynamic>;
+        }
 
-      // O SEGREDO ESTÁ AQUI: Envolver em um Material transparente
-      return Scaffold(
-       backgroundColor: Colors.white, // Garante que o fundo da aba seja branco
-       body: SingleChildScrollView(
-       child: Column(
-        children: [
-          _buildStadiumHeader(context, stadiumData['fotoUrl']),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
+        return Scaffold(
+          backgroundColor: Colors.white, 
+          body: SingleChildScrollView(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildSectionTitle("Últimos Confrontos no Estádio"),
-                _buildH2HList(false, stadiumData['ultimosConfrontos'] ?? []), // false = isDark
+                _buildStadiumHeader(context, stadiumData['fotoUrl']),
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSectionTitle("Últimos Confrontos no Estádio"),
+                      _buildH2HList(false, stadiumData['ultimosConfrontos'] ?? []), 
 
-                const SizedBox(height: 24),
+                      const SizedBox(height: 24),
 
-                _buildSectionTitle("Desempenho no ${game.local}"),
-                _buildStadiumStats(false, stadiumData), // false = isDark
+                      _buildSectionTitle("Desempenho no ${widget.game.local}"),
+                      _buildStadiumStats(false, stadiumData), 
 
-                const SizedBox(height: 24),
+                      const SizedBox(height: 24),
 
-                _buildSectionTitle("Você sabia?"),
-                _buildCuriosityCard(false, stadiumData['curiosidades']), // false = isDark
+                      _buildSectionTitle("Você sabia?"),
+                      _buildCuriosityCard(false, stadiumData['curiosidades']), 
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
-        ],
-       ), 
-       ),
-       );
+          // Adiciona o Banner fixado na base da aba caso tenha sido carregado com sucesso
+          bottomNavigationBar: _isBannerLoaded && _bannerAd != null
+              ? Container(
+                  color: Colors.white,
+                  width: _bannerAd!.size.width.toDouble(),
+                  height: _bannerAd!.size.height.toDouble(),
+                  alignment: Alignment.center,
+                  child: AdWidget(ad: _bannerAd!),
+                )
+              : const SizedBox.shrink(),
+        );
       },
-  );
-}
+    );
+  }
 
   Widget _buildStadiumHeader(BuildContext context, String? fotoUrl) {
     final bool hasImage = fotoUrl != null && fotoUrl.isNotEmpty;
@@ -119,7 +170,7 @@ Widget build(BuildContext context) {
           bottom: 16,
           left: 16,
           child: Text(
-            game.local,
+            widget.game.local,
             style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
           ),
         )
@@ -194,26 +245,25 @@ Widget build(BuildContext context) {
     );
   }
 
-Widget _buildCuriosityCard(bool isDark, String? text) {
-  return Container(
-    width: double.infinity, // Garante que o card ocupe a largura toda
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      // Se for dark mode, usa um cinza bem escuro, se não, um vermelho bem clarinho
-      color: isDark ? Colors.white.withOpacity(0.05) : Colors.red.withOpacity(0.05), 
-      borderRadius: BorderRadius.circular(12)
-    ),
-    child: Text(
-      text ?? "Nenhuma curiosidade disponível.",
-      style: TextStyle(
-        fontStyle: FontStyle.italic,
-        fontSize: 14, // Tamanho controlado
-        color: isDark ? Colors.white70 : Colors.black87, // Cor controlada
-        decoration: TextDecoration.none, // Remove o sublinhado amarelo
+  Widget _buildCuriosityCard(bool isDark, String? text) {
+    return Container(
+      width: double.infinity, 
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withOpacity(0.05) : Colors.red.withOpacity(0.05), 
+        borderRadius: BorderRadius.circular(12)
       ),
-    ),
-  );
-}
+      child: Text(
+        text ?? "Nenhuma curiosidade disponível.",
+        style: TextStyle(
+          fontStyle: FontStyle.italic,
+          fontSize: 14, 
+          color: isDark ? Colors.white70 : Colors.black87, 
+          decoration: TextDecoration.none, 
+        ),
+      ),
+    );
+  }
 
   Widget _buildSectionTitle(String title) {
     return Padding(

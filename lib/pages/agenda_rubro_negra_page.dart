@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart'; // Importação do SDK
 import 'package:pheli_fla_app/widgets/competition_list_widget.dart'; // O novo widget genérico
 
 class AgendaRubroNegraPage extends StatefulWidget {
@@ -9,6 +10,11 @@ class AgendaRubroNegraPage extends StatefulWidget {
 
 class _AgendaRubroNegraPageState extends State<AgendaRubroNegraPage> {
   int _selectedIndex = 0;
+  BannerAd? _bannerAd;
+  bool _isBannerLoaded = false;
+
+  // ID de teste oficial do Google para desenvolvimento seguro
+  final String _adUnitId = 'ca-app-pub-6735946824045123/9886135824';
 
   // Lista simplificada usando o widget genérico com os filtros exatos
   final List<Widget> _pages = [
@@ -19,30 +25,75 @@ class _AgendaRubroNegraPageState extends State<AgendaRubroNegraPage> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _loadBanner();
+  }
+
+  /// Inicializa e carrega o anúncio de banner
+  void _loadBanner() {
+    _bannerAd = BannerAd(
+      adUnitId: _adUnitId,
+      request: const AdRequest(),
+      size: AdSize.banner,
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          setState(() {
+            _isBannerLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (ad, err) {
+          debugPrint('Falha ao carregar o banner da Agenda: $err');
+          ad.dispose();
+        },
+      ),
+    )..load();
+  }
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose(); // Evita memory leak limpando o anúncio ao sair da página
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Agenda Rubro-Negra'),
         backgroundColor: Colors.red[800],
         elevation: 0,
       ),
-      body: IndexedStack( // IndexedStack mantém o estado das abas ao alternar
-        index: _selectedIndex,
-        children: _pages,
+      // Colocamos o IndexedStack e o Banner em uma Column para o banner fixar embaixo
+      body: Column(
+        children: [
+          Expanded(
+            child: IndexedStack(
+              index: _selectedIndex,
+              children: _pages,
+            ),
+          ),
+          // Se o banner carregou, ele aparece aqui, flutuando logo acima da BottomNavigationBar
+          if (_isBannerLoaded && _bannerAd != null)
+            Container(
+              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              width: _bannerAd!.size.width.toDouble(),
+              height: _bannerAd!.size.height.toDouble(),
+              alignment: Alignment.center,
+              child: AdWidget(ad: _bannerAd!),
+            ),
+        ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
         selectedItemColor: Colors.red[800],
-       // MUDANÇA: Garante que o não selecionado mude conforme o tema
-      unselectedItemColor: Theme.of(context).brightness == Brightness.dark 
-        ? Colors.white54 
-        : Colors.grey[600],
-     backgroundColor: Theme.of(context).brightness == Brightness.dark 
-      ? Color(0xFF1E1E1E) // Cor de fundo para modo escuro
-      : Colors.white,      // Cor de fundo para modo claro
-     type: BottomNavigationBarType.fixed,
-     items: const [
+        unselectedItemColor: isDark ? Colors.white54 : Colors.grey[600],
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,      
+        type: BottomNavigationBarType.fixed,
+        items: const [
           BottomNavigationBarItem(
             icon: FaIcon(FontAwesomeIcons.trophy),
             label: 'Brasileirão',

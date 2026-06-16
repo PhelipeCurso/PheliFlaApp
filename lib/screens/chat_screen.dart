@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async'; // --- ADICIONADO: Necessário para usar o Timer ---
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -8,7 +9,6 @@ import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import '../services/chat_service.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter/material.dart';
 
 class ChatScreen extends StatefulWidget {
   final String roomName;
@@ -33,6 +33,9 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 
   String? nomeDaSala;
   String selectedBackground = 'assets/images/fundos/PheliFlafundo.png';
+  
+  // --- ADICIONADO: Declaração do Timer de presença ---
+  Timer? _presenceTimer;
 
   final List<String> backgroundImages = const [
     'assets/images/fundos/PheliFlafundo.png',
@@ -51,6 +54,11 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _loadSavedBackground();
     _initializeRoom();
+
+    // --- ADICIONADO: Inicializa o Timer para atualizar a atividade a cada 3 minutos ---
+    _presenceTimer = Timer.periodic(const Duration(minutes: 3), (timer) {
+      _chatService.atualizarAtividade(widget.roomName);
+    });
   }
 
   Future<void> _initializeRoom() async {
@@ -133,6 +141,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    // --- ADICIONADO: Cancela o Timer para evitar vazamento de memória (Memory Leak) ---
+    _presenceTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _setUsuarioOnline(false);
     super.dispose();
@@ -165,12 +175,15 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
             onPressed: _selecionarFundo,
           ),
           IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
+            icon: const Icon(Icons.arrow_back), // Mudado para ícone de voltar mais amigável
+            tooltip: 'Voltar para Salas',
+            onPressed: () {
+              // 1. Remove o usuário da lista online da sala atual
               _setUsuarioOnline(false);
-              await _auth.signOut();
+              
+              // 2. Redireciona para a seleção de salas mantendo o usuário logado (sem signOut)
               if (mounted) {
-                Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
+                Navigator.pushNamedAndRemoveUntil(context, '/room-selection', (_) => false);
               }
             },
           ),
@@ -427,8 +440,6 @@ class MessageBubble extends StatelessWidget {
                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.red[900])),
                     const SizedBox(height: 4),
                   ],
-                  
-                  // AQUI É A MÁGICA: CHAMA O PLAYER SE FOR ÁUDIO!
                   if (isAudio && msgData['mediaUrl'] != null)
                     AudioPlayerWidget(url: msgData['mediaUrl'], isMe: isMe)
                   else
@@ -470,9 +481,9 @@ class MessageBubble extends StatelessWidget {
       return '';
     }
   }
-} // <-- AQUI FECHA A MESSAGE BUBBLE!
+}
 
-// --- WIDGET DO PLAYER DE ÁUDIO (AGORA SEPARADO CORRETAMENTE) ---
+// --- WIDGET DO PLAYER DE ÁUDIO ---
 
 class AudioPlayerWidget extends StatefulWidget {
   final String url;
@@ -495,17 +506,14 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
     super.initState();
     _audioPlayer = AudioPlayer();
 
-    // Ouvir mudanças de estado (play/pause)
     _audioPlayer.onPlayerStateChanged.listen((state) {
       if (mounted) setState(() => _isPlaying = state == PlayerState.playing);
     });
 
-    // Ouvir duração total
     _audioPlayer.onDurationChanged.listen((newDuration) {
       if (mounted) setState(() => _duration = newDuration);
     });
 
-    // Ouvir posição atual
     _audioPlayer.onPositionChanged.listen((newPosition) {
       if (mounted) setState(() => _position = newPosition);
     });

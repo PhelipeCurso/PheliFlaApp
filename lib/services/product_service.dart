@@ -47,11 +47,12 @@ class ProductService {
                   : (data['preco'] as num?)?.toDouble() ?? 0.0,
           precoPromocional:
               data['precoPromocao'] is String
-                  ? double.tryParse(data['precoPromocao']) ?? 0.0
-                  : (data['precoPromocao'] as num?)?.toDouble() ?? 0.0,
+                  ? double.tryParse(data['precoPromocional']) ?? 0.0
+                  : (data['precoPromocional'] as num?)?.toDouble() ?? 0.0,
           loja: data['loja'] ?? '',
           codigoLoja: data['codigoLoja'] ?? '',
           plataforma: data['plataforma'] ??'',
+          entregaFull: (data['entregaFull'] as bool?) ?? false,
         );
       }).toList();
     } catch (e) {
