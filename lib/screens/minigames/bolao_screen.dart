@@ -26,7 +26,13 @@ class _BolaoScreenState extends State<BolaoScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(m, style: const TextStyle(fontFamily: 'Raleway', fontWeight: FontWeight.w600)),
+        content: Text(
+          m,
+          style: const TextStyle(
+            fontFamily: 'Raleway',
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         backgroundColor: _kRed,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -97,13 +103,18 @@ class _BolaoScreenState extends State<BolaoScreen> {
                               children: [
                                 Row(
                                   children: [
-                                    const Icon(Icons.sports_soccer,
-                                        color: _kGold, size: 18),
+                                    const Icon(
+                                      Icons.sports_soccer,
+                                      color: _kGold,
+                                      size: 18,
+                                    ),
                                     const SizedBox(width: 6),
                                     Text(
                                       'BOLÃO',
                                       style: TextStyle(
-                                        color: Colors.white.withValues(alpha: 0.7),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.7,
+                                        ),
                                         fontSize: 12,
                                         letterSpacing: 3,
                                         fontFamily: 'Raleway',
@@ -128,19 +139,27 @@ class _BolaoScreenState extends State<BolaoScreen> {
                           ),
                           // Botão ranking
                           GestureDetector(
-                            onTap: () =>
-                                Navigator.pushNamed(context, '/ranking_screen'),
+                            onTap:
+                                () => Navigator.pushNamed(
+                                  context,
+                                  '/ranking_screen',
+                                ),
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 8),
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
                               decoration: BoxDecoration(
                                 color: _kGold,
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: const Row(
                                 children: [
-                                  Icon(Icons.emoji_events,
-                                      color: _kBlack, size: 16),
+                                  Icon(
+                                    Icons.emoji_events,
+                                    color: _kBlack,
+                                    size: 16,
+                                  ),
                                   SizedBox(width: 5),
                                   Text(
                                     'Ranking',
@@ -166,44 +185,38 @@ class _BolaoScreenState extends State<BolaoScreen> {
 
           // ── Lista de jogos ──
           StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('jogos')
-                .where('bolao_ativo', isEqualTo: true)
-                .snapshots(),
+            stream:
+                FirebaseFirestore.instance
+                    .collection('jogos')
+                    .where('bolao_ativo', isEqualTo: true)
+                    .snapshots(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const SliverFillRemaining(
-                  child: Center(
-                    child: CircularProgressIndicator(color: _kRed),
-                  ),
+                  child: Center(child: CircularProgressIndicator(color: _kRed)),
                 );
               }
 
               if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return SliverFillRemaining(
-                  child: _EmptyState(isDark: isDark),
-                );
+                return SliverFillRemaining(child: _EmptyState(isDark: isDark));
               }
 
               return SliverPadding(
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
                 sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final match = snapshot.data!.docs[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: JogoCard(
-                          idJogo: match.id,
-                          uid: _uid,
-                          dataJogo: match.data() as Map<String, dynamic>,
-                          onNotificar: _notificar,
-                          isDark: isDark,
-                        ),
-                      );
-                    },
-                    childCount: snapshot.data!.docs.length,
-                  ),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final match = snapshot.data!.docs[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: JogoCard(
+                        idJogo: match.id,
+                        uid: _uid,
+                        dataJogo: match.data() as Map<String, dynamic>,
+                        onNotificar: _notificar,
+                        isDark: isDark,
+                      ),
+                    );
+                  }, childCount: snapshot.data!.docs.length),
                 ),
               );
             },
@@ -235,8 +248,7 @@ class _EmptyState extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: _kRed.withValues(alpha: 0.1),
               ),
-              child: const Icon(Icons.sports_soccer,
-                  size: 44, color: _kRed),
+              child: const Icon(Icons.sports_soccer, size: 44, color: _kRed),
             ),
             const SizedBox(height: 20),
             Text(
@@ -310,10 +322,11 @@ class _JogoCardState extends State<JogoCard> {
 
   Future<void> _buscarPalpiteExistente() async {
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection('palpites')
-          .doc('${widget.idJogo}_${widget.uid}')
-          .get();
+      final doc =
+          await FirebaseFirestore.instance
+              .collection('palpites')
+              .doc('${widget.idJogo}_${widget.uid}')
+              .get();
 
       if (doc.exists && mounted) {
         final data = doc.data();
@@ -343,11 +356,13 @@ class _JogoCardState extends State<JogoCard> {
 
     setState(() => _enviando = true);
     try {
-      final userDoc = await FirebaseFirestore.instance
-          .collection('usuarios')
-          .doc(widget.uid)
-          .get();
-      final nome = userDoc.data()?['nomeUsuario'] ??
+      final userDoc =
+          await FirebaseFirestore.instance
+              .collection('usuarios')
+              .doc(widget.uid)
+              .get();
+      final nome =
+          userDoc.data()?['nomeUsuario'] ??
           userDoc.data()?['nome'] ??
           'Torcedor';
 
@@ -355,15 +370,15 @@ class _JogoCardState extends State<JogoCard> {
           .collection('palpites')
           .doc('${widget.idJogo}_${widget.uid}')
           .set({
-        'idJogo': widget.idJogo,
-        'idUsuario': widget.uid,
-        'nomeUsuario': nome,
-        'gols_flamengo': int.parse(txtFla),
-        'gols_adversario': int.parse(txtAdv),
-        'pontosGanhos': 0,
-        'processado': false,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
+            'idJogo': widget.idJogo,
+            'idUsuario': widget.uid,
+            'nomeUsuario': nome,
+            'gols_flamengo': int.parse(txtFla),
+            'gols_adversario': int.parse(txtAdv),
+            'pontosGanhos': 0,
+            'processado': false,
+            'timestamp': FieldValue.serverTimestamp(),
+          });
 
       if (mounted) setState(() => _palpiteConfirmado = true);
       widget.onNotificar('Palpite registrado! Boa sorte! 🔴⚫');
@@ -379,21 +394,24 @@ class _JogoCardState extends State<JogoCard> {
     final adversario = widget.dataJogo['adversario'] ?? 'Adversário';
     final competicao = widget.dataJogo['competicao'] ?? 'Partida';
     final dataJogo = widget.dataJogo['data'] ?? '';
+    // ── FIX: lê a URL do escudo salva no documento do jogo ──────────
+    final escudoAdversario = widget.dataJogo['escudoAdversario'] as String?;
 
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        gradient: widget.isDark
-            ? const LinearGradient(
-                colors: [Color(0xFF1C1C1C), Color(0xFF232323)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              )
-            : const LinearGradient(
-                colors: [Colors.white, Color(0xFFFFF5F5)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+        gradient:
+            widget.isDark
+                ? const LinearGradient(
+                  colors: [Color(0xFF1C1C1C), Color(0xFF232323)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+                : const LinearGradient(
+                  colors: [Colors.white, Color(0xFFFFF5F5)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
         boxShadow: [
           BoxShadow(
             color: _kRed.withValues(alpha: 0.15),
@@ -409,171 +427,192 @@ class _JogoCardState extends State<JogoCard> {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
-        child: _carregandoPalpite
-            ? const SizedBox(
-                height: 160,
-                child: Center(
-                  child: CircularProgressIndicator(color: _kRed, strokeWidth: 2),
-                ),
-              )
-            : Column(
-                children: [
-                  // ── Faixa superior com badge de competição ──
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 18, vertical: 12),
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [_kBlack, _kRed],
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.sports_soccer,
-                            color: Colors.white, size: 14),
-                        const SizedBox(width: 7),
-                        Expanded(
-                          child: Text(
-                            competicao.toUpperCase(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              fontFamily: 'Raleway',
-                              letterSpacing: 1.5,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (dataJogo.isNotEmpty)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.calendar_today,
-                                    color: Colors.white70, size: 10),
-                                const SizedBox(width: 4),
-                                Text(
-                                  dataJogo,
-                                  style: const TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 10,
-                                    fontFamily: 'Raleway',
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
+        child:
+            _carregandoPalpite
+                ? const SizedBox(
+                  height: 160,
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: _kRed,
+                      strokeWidth: 2,
                     ),
                   ),
-
-                  // ── Área do placar ──
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 22, 18, 18),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            // Time da casa — Flamengo
-                            Expanded(
-                              child: Column(
-                                children: [
-                                  _TeamLogo(
-                                    isFlamengo: true,
-                                    isDark: widget.isDark,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  const Text(
-                                    'Flamengo',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w800,
-                                      fontFamily: 'Raleway',
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
+                )
+                : Column(
+                  children: [
+                    // ── Faixa superior com badge de competição ──
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 12,
+                      ),
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [_kBlack, _kRed],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.sports_soccer,
+                            color: Colors.white,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 7),
+                          Expanded(
+                            child: Text(
+                              competicao.toUpperCase(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                fontFamily: 'Raleway',
+                                letterSpacing: 1.5,
                               ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-
-                            // Inputs de placar
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 12),
+                          ),
+                          if (dataJogo.isNotEmpty)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
                               child: Row(
                                 children: [
-                                  _ScoreInput(
-                                    controller: _contFla,
-                                    isDark: widget.isDark,
-                                    enabled: !_palpiteConfirmado && !_enviando,
+                                  const Icon(
+                                    Icons.calendar_today,
+                                    color: Colors.white70,
+                                    size: 10,
                                   ),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8),
-                                    child: Text(
-                                      'x',
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    dataJogo,
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 10,
+                                      fontFamily: 'Raleway',
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+
+                    // ── Área do placar ──
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(18, 22, 18, 18),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              // Time da casa — Flamengo
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    const _TeamLogo(
+                                      isFlamengo: true,
+                                      isDark: false, // não usado para Flamengo
+                                    ),
+                                    const SizedBox(height: 8),
+                                    const Text(
+                                      'Flamengo',
+                                      textAlign: TextAlign.center,
                                       style: TextStyle(
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 22,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w800,
                                         fontFamily: 'Raleway',
-                                        color: widget.isDark
-                                            ? Colors.white38
-                                            : Colors.black26,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Inputs de placar
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
+                                child: Row(
+                                  children: [
+                                    _ScoreInput(
+                                      controller: _contFla,
+                                      isDark: widget.isDark,
+                                      enabled:
+                                          !_palpiteConfirmado && !_enviando,
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                      ),
+                                      child: Text(
+                                        'x',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 22,
+                                          fontFamily: 'Raleway',
+                                          color:
+                                              widget.isDark
+                                                  ? Colors.white38
+                                                  : Colors.black26,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  _ScoreInput(
-                                    controller: _contAdv,
-                                    isDark: widget.isDark,
-                                    enabled: !_palpiteConfirmado && !_enviando,
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            // Time visitante — Adversário
-                            Expanded(
-                              child: Column(
-                                children: [
-                                  _TeamLogo(
-                                    isFlamengo: false,
-                                    isDark: widget.isDark,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    adversario,
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w800,
-                                      fontFamily: 'Raleway',
+                                    _ScoreInput(
+                                      controller: _contAdv,
+                                      isDark: widget.isDark,
+                                      enabled:
+                                          !_palpiteConfirmado && !_enviando,
                                     ),
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 1,
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
 
-                        const SizedBox(height: 20),
+                              // Time visitante — Adversário
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    // ── FIX: passa a URL do escudo ──────
+                                    _TeamLogo(
+                                      isFlamengo: false,
+                                      isDark: widget.isDark,
+                                      escudoUrl: escudoAdversario,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      adversario,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w800,
+                                        fontFamily: 'Raleway',
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
 
-                        // ── Botão de confirmação / Estado Confirmado ──
-                        _palpiteConfirmado
-                            ? _ConfirmedBadge(isDark: widget.isDark)
-                            : SizedBox(
+                          const SizedBox(height: 20),
+
+                          // ── Botão de confirmação / Estado Confirmado ──
+                          _palpiteConfirmado
+                              ? _ConfirmedBadge(isDark: widget.isDark)
+                              : SizedBox(
                                 width: double.infinity,
                                 height: 48,
                                 child: ElevatedButton(
@@ -581,70 +620,77 @@ class _JogoCardState extends State<JogoCard> {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: _kRed,
                                     foregroundColor: Colors.white,
-                                    disabledBackgroundColor:
-                                        _kRed.withValues(alpha: 0.5),
+                                    disabledBackgroundColor: _kRed.withValues(
+                                      alpha: 0.5,
+                                    ),
                                     elevation: 4,
-                                    shadowColor:
-                                        _kRed.withValues(alpha: 0.4),
+                                    shadowColor: _kRed.withValues(alpha: 0.4),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(14),
                                     ),
                                   ),
-                                  child: _enviando
-                                      ? const SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
+                                  child:
+                                      _enviando
+                                          ? const SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
                                               color: Colors.white,
-                                              strokeWidth: 2),
-                                        )
-                                      : const Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Icon(Icons.check_circle_outline,
-                                                size: 18),
-                                            SizedBox(width: 8),
-                                            Text(
-                                              'Confirmar Palpite',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.w800,
-                                                fontSize: 15,
-                                                fontFamily: 'Raleway',
-                                              ),
+                                              strokeWidth: 2,
                                             ),
-                                            SizedBox(width: 6),
-                                            Text('🎲',
-                                                style:
-                                                    TextStyle(fontSize: 15)),
-                                          ],
-                                        ),
+                                          )
+                                          : const Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons.check_circle_outline,
+                                                size: 18,
+                                              ),
+                                              SizedBox(width: 8),
+                                              Text(
+                                                'Confirmar Palpite',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w800,
+                                                  fontSize: 15,
+                                                  fontFamily: 'Raleway',
+                                                ),
+                                              ),
+                                              SizedBox(width: 6),
+                                              Text(
+                                                '🎲',
+                                                style: TextStyle(fontSize: 15),
+                                              ),
+                                            ],
+                                          ),
                                 ),
                               ),
 
-                        // Link para alterar palpite confirmado
-                        if (_palpiteConfirmado)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 10),
-                            child: TextButton(
-                              onPressed: () =>
-                                  setState(() => _palpiteConfirmado = false),
-                              child: const Text(
-                                'Alterar palpite',
-                                style: TextStyle(
-                                  color: _kRed,
-                                  fontSize: 13,
-                                  fontFamily: 'Raleway',
-                                  fontWeight: FontWeight.w600,
+                          // Link para alterar palpite confirmado
+                          if (_palpiteConfirmado)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 10),
+                              child: TextButton(
+                                onPressed:
+                                    () => setState(
+                                      () => _palpiteConfirmado = false,
+                                    ),
+                                child: const Text(
+                                  'Alterar palpite',
+                                  style: TextStyle(
+                                    color: _kRed,
+                                    fontSize: 13,
+                                    fontFamily: 'Raleway',
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
       ),
     );
   }
@@ -652,58 +698,113 @@ class _JogoCardState extends State<JogoCard> {
 
 // ─── Widgets auxiliares ───────────────────────────────────────────────────────
 
+/// Exibe o escudo de um time.
+///
+/// • Flamengo (`isFlamengo: true`): sempre o badge fixo "CRF" — não depende
+///   de rede, então nunca falha.
+/// • Adversário (`isFlamengo: false`): busca a imagem em [escudoUrl], que
+///   vem do campo `escudoAdversario` salvo no documento do jogo. Se a URL
+///   for nula, vazia, ou o download falhar, cai no ícone genérico de escudo.
 class _TeamLogo extends StatelessWidget {
   final bool isFlamengo;
   final bool isDark;
+  final String? escudoUrl;
 
-  const _TeamLogo({required this.isFlamengo, required this.isDark});
+  const _TeamLogo({
+    required this.isFlamengo,
+    required this.isDark,
+    this.escudoUrl,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final hasEscudo = !isFlamengo && escudoUrl != null && escudoUrl!.isNotEmpty;
+
     return Container(
       width: 52,
       height: 52,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: isFlamengo
-            ? const LinearGradient(
-                colors: [_kBlack, _kRed],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              )
-            : LinearGradient(
-                colors: isDark
-                    ? [const Color(0xFF2C2C2C), const Color(0xFF3A3A3A)]
-                    : [const Color(0xFFEEEEEE), const Color(0xFFDDDDDD)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+        // Com escudo real, usamos fundo branco neutro — evita o logo
+        // "lutar" visualmente contra um gradiente colorido por trás.
+        color: hasEscudo ? Colors.white : null,
+        gradient:
+            hasEscudo
+                ? null
+                : isFlamengo
+                ? const LinearGradient(
+                  colors: [_kBlack, _kRed],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+                : LinearGradient(
+                  colors:
+                      isDark
+                          ? [const Color(0xFF2C2C2C), const Color(0xFF3A3A3A)]
+                          : [const Color(0xFFEEEEEE), const Color(0xFFDDDDDD)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
         boxShadow: [
           BoxShadow(
-            color: (isFlamengo ? _kRed : Colors.grey)
-                .withValues(alpha: 0.3),
+            color: (isFlamengo ? _kRed : Colors.grey).withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
         ],
       ),
-      child: Center(
-        child: isFlamengo
-            ? const Text(
-                'CRF',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 12,
-                  fontFamily: 'Raleway',
-                  letterSpacing: 0.5,
+      child: ClipOval(
+        child:
+            isFlamengo
+                ? const Center(
+                  child: Text(
+                    'CRF',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 12,
+                      fontFamily: 'Raleway',
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                )
+                : hasEscudo
+                ? Padding(
+                  // Respiro para o escudo não tocar a borda do círculo
+                  padding: const EdgeInsets.all(7),
+                  child: Image.network(
+                    escudoUrl!,
+                    fit: BoxFit.contain,
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
+                      return Center(
+                        child: SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 1.8,
+                            color: isDark ? Colors.white38 : Colors.black26,
+                          ),
+                        ),
+                      );
+                    },
+                    // URL inválida, 404 ou sem internet → ícone genérico,
+                    // nunca uma tela quebrada ou erro vermelho do Flutter.
+                    errorBuilder:
+                        (context, error, stackTrace) => Icon(
+                          Icons.shield,
+                          size: 24,
+                          color: isDark ? Colors.white38 : Colors.black38,
+                        ),
+                  ),
+                )
+                : Center(
+                  child: Icon(
+                    Icons.shield,
+                    size: 24,
+                    color: isDark ? Colors.white38 : Colors.black38,
+                  ),
                 ),
-              )
-            : Icon(
-                Icons.shield,
-                size: 24,
-                color: isDark ? Colors.white38 : Colors.black38,
-              ),
       ),
     );
   }
@@ -726,14 +827,16 @@ class _ScoreInput extends StatelessWidget {
       width: 52,
       height: 58,
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.07)
-            : Colors.black.withValues(alpha: 0.05),
+        color:
+            isDark
+                ? Colors.white.withValues(alpha: 0.07)
+                : Colors.black.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.12)
-              : Colors.black.withValues(alpha: 0.08),
+          color:
+              isDark
+                  ? Colors.white.withValues(alpha: 0.12)
+                  : Colors.black.withValues(alpha: 0.08),
           width: 1.5,
         ),
       ),
