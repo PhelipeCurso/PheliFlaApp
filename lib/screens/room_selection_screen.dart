@@ -5,10 +5,18 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'chat_screen.dart';
 import 'package:pheli_fla_app/screens/home_screen.dart';
+import 'package:pheli_fla_app/services/ad_service.dart';
+import 'package:provider/provider.dart';
+import 'package:pheli_fla_app/providers/user_plus_provider.dart';
 
-class RoomSelectionScreen extends StatelessWidget {
+class RoomSelectionScreen extends StatefulWidget {
   const RoomSelectionScreen({super.key});
 
+  @override
+  State<RoomSelectionScreen> createState() => _RoomSelectionScreenState();
+}
+
+class _RoomSelectionScreenState extends State<RoomSelectionScreen> {
   /// Lógica de entrada na sala com gerenciamento de notificações por tópico
   Future<void> _enterChatRoom(
     BuildContext context,
@@ -65,11 +73,12 @@ class RoomSelectionScreen extends StatelessWidget {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => ChatScreen(
-            roomName: roomId,
-            nomeUsuario: nomeUsuario,
-            photoUrl: photoUrl,
-          ),
+          builder:
+              (_) => ChatScreen(
+                roomName: roomId,
+                nomeUsuario: nomeUsuario,
+                photoUrl: photoUrl,
+              ),
         ),
       );
     }
@@ -82,16 +91,17 @@ class RoomSelectionScreen extends StatelessWidget {
   void _goToHome(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     final nomeUsuario = user?.displayName ?? 'Usuário';
-    
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (_) => HomeScreen(
-          nomeUsuario: nomeUsuario,
-          isDarkMode: false,
-          onThemeChanged: (_) {},
-          isPlusUser: true, // Mantendo conforme sua lógica atual
-        ),
+        builder:
+            (_) => HomeScreen(
+              nomeUsuario: nomeUsuario,
+              isDarkMode: false,
+              onThemeChanged: (_) {},
+              isPlusUser: true, // Mantendo conforme sua lógica atual
+            ),
       ),
     );
   }
@@ -103,65 +113,90 @@ class RoomSelectionScreen extends StatelessWidget {
 
     await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Criar Nova Sala'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nomeSalaController,
-              decoration: const InputDecoration(
-                labelText: 'Nome da sala',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.chat_bubble_outline),
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: const Text('Criar Nova Sala'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nomeSalaController,
+                  decoration: const InputDecoration(
+                    labelText: 'Nome da sala',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.chat_bubble_outline),
+                  ),
+                  textCapitalization: TextCapitalization.sentences,
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: limiteController,
+                  decoration: const InputDecoration(
+                    labelText: 'Limite de usuários',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.group_add_outlined),
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                child: const Text('Cancelar'),
+                onPressed: () => Navigator.pop(context),
               ),
-              textCapitalization: TextCapitalization.sentences,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: limiteController,
-              decoration: const InputDecoration(
-                labelText: 'Limite de usuários',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.group_add_outlined),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red[800],
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Criar'),
+                onPressed: () async {
+                  final nome = nomeSalaController.text.trim();
+                  int limite = int.tryParse(limiteController.text.trim()) ?? 20;
+
+                  if (limite < 2) limite = 2;
+                  if (limite > 100) limite = 100;
+                  if (nome.isEmpty) return;
+
+                  await FirebaseFirestore.instance.collection('salas').add({
+                    'nome': nome,
+                    'limite': limite,
+                    'usuarios': [],
+                    'excluida': false,
+                  });
+
+                  if (context.mounted) Navigator.pop(context);
+                },
               ),
-              keyboardType: TextInputType.number,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            child: const Text('Cancelar'),
-            onPressed: () => Navigator.pop(context),
+            ],
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red[800],
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Criar'),
-            onPressed: () async {
-              final nome = nomeSalaController.text.trim();
-              int limite = int.tryParse(limiteController.text.trim()) ?? 20;
-              
-              if (limite < 2) limite = 2;
-              if (limite > 100) limite = 100;
-              if (nome.isEmpty) return;
-
-              await FirebaseFirestore.instance.collection('salas').add({
-                'nome': nome,
-                'limite': limite,
-                'usuarios': [],
-                'excluida': false,
-              });
-
-              if (context.mounted) Navigator.pop(context);
-            },
-          ),
-        ],
-      ),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Inicializa e carrega interstitial para exibir ao abrir a seleção de salas
+    AdService.instance.initialize().then((_) {
+      if (mounted) {
+        final isPlusUser =
+            Provider.of<UserPlusProvider>(context, listen: false).isPremium;
+        AdService.instance.loadInterstitial(
+          showOnLoad: true,
+          isPlusUser: isPlusUser,
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    AdService.instance.disposeInterstitial();
+    super.dispose();
   }
 
   @override
@@ -201,13 +236,16 @@ class RoomSelectionScreen extends StatelessWidget {
         child: Container(
           color: Colors.black.withOpacity(0.4),
           child: StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('salas')
-                .where('excluida', isNotEqualTo: true)
-                .snapshots(),
+            stream:
+                FirebaseFirestore.instance
+                    .collection('salas')
+                    .where('excluida', isNotEqualTo: true)
+                    .snapshots(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator(color: Colors.red));
+                return const Center(
+                  child: CircularProgressIndicator(color: Colors.red),
+                );
               }
 
               if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
@@ -220,7 +258,7 @@ class RoomSelectionScreen extends StatelessWidget {
               }
 
               final docs = snapshot.data!.docs;
-              
+
               return ListView.separated(
                 padding: const EdgeInsets.all(20),
                 itemCount: docs.length,
@@ -228,12 +266,12 @@ class RoomSelectionScreen extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final doc = docs[index];
                   final data = doc.data() as Map<String, dynamic>;
-                  
+
                   final nome = data['nome'] ?? 'Sala';
                   final usuarios = List.from(data['usuarios'] ?? []);
                   final limite = data['limite'] ?? 20;
                   final salaId = doc.id;
-                  
+
                   final bool salaCheia = usuarios.length >= limite;
 
                   return Card(
@@ -243,7 +281,10 @@ class RoomSelectionScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 8,
+                      ),
                       title: Text(
                         nome,
                         style: const TextStyle(
@@ -256,16 +297,19 @@ class RoomSelectionScreen extends StatelessWidget {
                         '${usuarios.length} de $limite participantes',
                         style: TextStyle(
                           color: salaCheia ? Colors.red : Colors.grey[700],
-                          fontWeight: salaCheia ? FontWeight.bold : FontWeight.normal,
+                          fontWeight:
+                              salaCheia ? FontWeight.bold : FontWeight.normal,
                         ),
                       ),
                       trailing: Icon(
                         salaCheia ? Icons.lock : Icons.login,
                         color: salaCheia ? Colors.red : Colors.green[600],
                       ),
-                      onTap: salaCheia
-                          ? null
-                          : () => _enterChatRoom(context, salaId, nomeUsuario),
+                      onTap:
+                          salaCheia
+                              ? null
+                              : () =>
+                                  _enterChatRoom(context, salaId, nomeUsuario),
                     ),
                   );
                 },

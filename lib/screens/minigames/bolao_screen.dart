@@ -6,10 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 // ─── Paleta & constantes visuais ─────────────────────────────────────────────
 
 const _kRed = Color(0xFFB71C1C);
-const _kRedLight = Color(0xFFE53935);
 const _kBlack = Color(0xFF0D0D0D);
-const _kCardDark = Color(0xFF1A1A1A);
-const _kCardLight = Color(0xFFFAFAFA);
 const _kGold = Color(0xFFFFB300);
 
 class BolaoScreen extends StatefulWidget {
@@ -394,8 +391,9 @@ class _JogoCardState extends State<JogoCard> {
     final adversario = widget.dataJogo['adversario'] ?? 'Adversário';
     final competicao = widget.dataJogo['competicao'] ?? 'Partida';
     final dataJogo = widget.dataJogo['data'] ?? '';
-    // ── FIX: lê a URL do escudo salva no documento do jogo ──────────
-    final escudoAdversario = widget.dataJogo['escudoAdversario'] as String?;
+    // ── FIX: lê as URLs dos escudos salvas no documento do jogo ──────────
+    final escudoFlamengo = widget.dataJogo['escudotime'] as String?;
+    final escudoAdversario = widget.dataJogo['escudo_adversario'] as String?;
 
     return Container(
       decoration: BoxDecoration(
@@ -520,9 +518,10 @@ class _JogoCardState extends State<JogoCard> {
                               Expanded(
                                 child: Column(
                                   children: [
-                                    const _TeamLogo(
+                                    _TeamLogo(
                                       isFlamengo: true,
-                                      isDark: false, // não usado para Flamengo
+                                      isDark: widget.isDark,
+                                      escudoUrl: escudoFlamengo,
                                     ),
                                     const SizedBox(height: 8),
                                     const Text(
@@ -700,11 +699,11 @@ class _JogoCardState extends State<JogoCard> {
 
 /// Exibe o escudo de um time.
 ///
-/// • Flamengo (`isFlamengo: true`): sempre o badge fixo "CRF" — não depende
-///   de rede, então nunca falha.
-/// • Adversário (`isFlamengo: false`): busca a imagem em [escudoUrl], que
-///   vem do campo `escudoAdversario` salvo no documento do jogo. Se a URL
-///   for nula, vazia, ou o download falhar, cai no ícone genérico de escudo.
+/// • Se [escudoUrl] for fornecida: exibe a imagem do escudo (para Flamengo ou Adversário).
+/// • Se [escudoUrl] for nula/vazia:
+///   - Flamengo: badge fixo "CRF" — não depende de rede.
+///   - Adversário: ícone genérico de escudo.
+/// • Se o download falhar: cai no fallback apropriado.
 class _TeamLogo extends StatelessWidget {
   final bool isFlamengo;
   final bool isDark;
@@ -718,7 +717,7 @@ class _TeamLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasEscudo = !isFlamengo && escudoUrl != null && escudoUrl!.isNotEmpty;
+    final hasEscudo = escudoUrl != null && escudoUrl!.isNotEmpty;
 
     return Container(
       width: 52,
@@ -755,20 +754,7 @@ class _TeamLogo extends StatelessWidget {
       ),
       child: ClipOval(
         child:
-            isFlamengo
-                ? const Center(
-                  child: Text(
-                    'CRF',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 12,
-                      fontFamily: 'Raleway',
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                )
-                : hasEscudo
+            hasEscudo
                 ? Padding(
                   // Respiro para o escudo não tocar a borda do círculo
                   padding: const EdgeInsets.all(7),
@@ -788,14 +774,41 @@ class _TeamLogo extends StatelessWidget {
                         ),
                       );
                     },
-                    // URL inválida, 404 ou sem internet → ícone genérico,
-                    // nunca uma tela quebrada ou erro vermelho do Flutter.
-                    errorBuilder:
-                        (context, error, stackTrace) => Icon(
-                          Icons.shield,
-                          size: 24,
-                          color: isDark ? Colors.white38 : Colors.black38,
-                        ),
+                    // URL inválida, 404 ou sem internet → fallback apropriado
+                    errorBuilder: (context, error, stackTrace) {
+                      if (isFlamengo) {
+                        return const Center(
+                          child: Text(
+                            'CRF',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 12,
+                              fontFamily: 'Raleway',
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        );
+                      }
+                      return Icon(
+                        Icons.shield,
+                        size: 24,
+                        color: isDark ? Colors.white38 : Colors.black38,
+                      );
+                    },
+                  ),
+                )
+                : isFlamengo
+                ? const Center(
+                  child: Text(
+                    'CRF',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 12,
+                      fontFamily: 'Raleway',
+                      letterSpacing: 0.5,
+                    ),
                   ),
                 )
                 : Center(

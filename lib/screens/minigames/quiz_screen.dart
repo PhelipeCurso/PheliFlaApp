@@ -4,10 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 // ─── Paleta — idêntica ao BolaoScreen ────────────────────────────────────────
 
-const _kRed       = Color(0xFFB71C1C);
-const _kRedLight  = Color(0xFFE53935);
-const _kBlack     = Color(0xFF0D0D0D);
-const _kGold      = Color(0xFFFFB300);
+const _kRed = Color(0xFFB71C1C);
+const _kBlack = Color(0xFF0D0D0D);
+const _kGold = Color(0xFFFFB300);
 
 class QuizScreen extends StatefulWidget {
   const QuizScreen({super.key});
@@ -18,19 +17,18 @@ class QuizScreen extends StatefulWidget {
 
 class _QuizScreenState extends State<QuizScreen>
     with SingleTickerProviderStateMixin {
-
   final String _uid = FirebaseAuth.instance.currentUser?.uid ?? '';
 
-  bool _jaRespondeuHoje  = false;
-  bool _carregando       = true;
+  bool _jaRespondeuHoje = false;
+  bool _carregando = true;
   List<DocumentSnapshot> _perguntas = [];
-  int  _indiceAtual      = 0;
-  int  _acertos          = 0;
+  int _indiceAtual = 0;
+  int _acertos = 0;
   int? _opcaoSelecionada;
-  bool _respondeuAtual   = false; // mostra feedback antes de avançar
+  bool _respondeuAtual = false; // mostra feedback antes de avançar
 
   late final AnimationController _progressCtrl;
-  late       Animation<double>   _progressAnim;
+  late Animation<double> _progressAnim;
 
   @override
   void initState() {
@@ -55,15 +53,18 @@ class _QuizScreenState extends State<QuizScreen>
 
   String _obterDataHoje() {
     final n = DateTime.now();
-    return '${n.year}-${n.month.toString().padLeft(2,'0')}-${n.day.toString().padLeft(2,'0')}';
+    return '${n.year}-${n.month.toString().padLeft(2, '0')}-${n.day.toString().padLeft(2, '0')}';
   }
 
   void _atualizarProgress() {
-    final target = (_indiceAtual + 1) / (_perguntas.isEmpty ? 1 : _perguntas.length);
+    final target =
+        (_indiceAtual + 1) / (_perguntas.isEmpty ? 1 : _perguntas.length);
     _progressAnim = Tween<double>(
       begin: _progressAnim.value,
       end: target,
-    ).animate(CurvedAnimation(parent: _progressCtrl, curve: Curves.easeOutCubic));
+    ).animate(
+      CurvedAnimation(parent: _progressCtrl, curve: Curves.easeOutCubic),
+    );
     _progressCtrl
       ..reset()
       ..forward();
@@ -71,20 +72,27 @@ class _QuizScreenState extends State<QuizScreen>
 
   Future<void> _verificarStatusQuiz() async {
     try {
-      final userDoc = await FirebaseFirestore.instance
-          .collection('usuarios').doc(_uid).get();
+      final userDoc =
+          await FirebaseFirestore.instance
+              .collection('usuarios')
+              .doc(_uid)
+              .get();
       final ultimaData = userDoc.data()?['ultimaDataQuiz'] as String? ?? '';
       final hoje = _obterDataHoje();
 
       if (ultimaData == hoje) {
-        setState(() { _jaRespondeuHoje = true; _carregando = false; });
+        setState(() {
+          _jaRespondeuHoje = true;
+          _carregando = false;
+        });
         return;
       }
 
-      final quizSnap = await FirebaseFirestore.instance
-          .collection('quizzes')
-          .where('dataExibicao', isEqualTo: hoje)
-          .get();
+      final quizSnap =
+          await FirebaseFirestore.instance
+              .collection('quizzes')
+              .where('dataExibicao', isEqualTo: hoje)
+              .get();
 
       setState(() {
         _perguntas = quizSnap.docs;
@@ -98,15 +106,15 @@ class _QuizScreenState extends State<QuizScreen>
   }
 
   Future<void> _finalizarQuiz() async {
-    final hoje    = _obterDataHoje();
-    final ontem   = DateTime.now().subtract(const Duration(days: 1));
+    final hoje = _obterDataHoje();
+    final ontem = DateTime.now().subtract(const Duration(days: 1));
     final strOntem =
-        '${ontem.year}-${ontem.month.toString().padLeft(2,'0')}-${ontem.day.toString().padLeft(2,'0')}';
+        '${ontem.year}-${ontem.month.toString().padLeft(2, '0')}-${ontem.day.toString().padLeft(2, '0')}';
 
     final userRef = FirebaseFirestore.instance.collection('usuarios').doc(_uid);
     final userDoc = await userRef.get();
 
-    int  streakAtual = userDoc.data()?['quizStreak'] ?? 0;
+    int streakAtual = userDoc.data()?['quizStreak'] ?? 0;
     final ultimaData = userDoc.data()?['ultimaDataQuiz'] as String? ?? '';
 
     if (_acertos == _perguntas.length && _perguntas.isNotEmpty) {
@@ -125,7 +133,7 @@ class _QuizScreenState extends State<QuizScreen>
     if (_respondeuAtual) return;
     setState(() {
       _opcaoSelecionada = index;
-      _respondeuAtual   = true;
+      _respondeuAtual = true;
     });
     final dados = _perguntas[_indiceAtual].data() as Map<String, dynamic>;
     if (index == dados['respostaCorreta']) _acertos++;
@@ -138,7 +146,7 @@ class _QuizScreenState extends State<QuizScreen>
       setState(() {
         _indiceAtual++;
         _opcaoSelecionada = null;
-        _respondeuAtual   = false;
+        _respondeuAtual = false;
       });
       _atualizarProgress();
     } else {
@@ -150,139 +158,151 @@ class _QuizScreenState extends State<QuizScreen>
 
   void _mostrarResultadoFinal(int streak) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final total  = _perguntas.length;
-    final pct    = total > 0 ? (_acertos / total * 100).round() : 0;
+    final total = _perguntas.length;
+    final pct = total > 0 ? (_acertos / total * 100).round() : 0;
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        backgroundColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(28, 32, 28, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Troféu animado
-              Container(
-                width: 80, height: 80,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [_kBlack, _kRed],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  boxShadow: [BoxShadow(color: _kRed.withValues(alpha: 0.4), blurRadius: 20)],
-                ),
-                child: const Center(child: Text('🏆', style: TextStyle(fontSize: 36))),
-              ),
-              const SizedBox(height: 20),
-
-              Text(
-                'Quiz Concluído!',
-                style: TextStyle(
-                  fontFamily: 'Raleway',
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                  color: isDark ? Colors.white : _kBlack,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                '$_acertos de $total perguntas corretas',
-                style: TextStyle(
-                  fontFamily: 'Raleway',
-                  fontSize: 14,
-                  color: isDark ? Colors.white54 : Colors.black45,
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Barra de desempenho
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: LinearProgressIndicator(
-                  value: total > 0 ? _acertos / total : 0,
-                  minHeight: 8,
-                  backgroundColor: isDark ? Colors.white12 : Colors.black12,
-                  valueColor: const AlwaysStoppedAnimation(_kRed),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  '$pct%',
-                  style: const TextStyle(
-                    fontFamily: 'Raleway',
-                    fontWeight: FontWeight.w700,
-                    color: _kRed,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Badge de streak
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: BoxDecoration(
-                  color: _kGold.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: _kGold.withValues(alpha: 0.3)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text('🔥', style: TextStyle(fontSize: 22)),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Ofensiva: $streak dias',
-                      style: const TextStyle(
-                        fontFamily: 'Raleway',
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16,
-                        color: _kGold,
+      builder:
+          (ctx) => Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+            backgroundColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(28, 32, 28, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Troféu animado
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                        colors: [_kBlack, _kRed],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _kRed.withValues(alpha: 0.4),
+                          blurRadius: 20,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _kRed,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
-                    elevation: 4,
-                    shadowColor: _kRed.withValues(alpha: 0.4),
+                    child: const Center(
+                      child: Text('🏆', style: TextStyle(fontSize: 36)),
+                    ),
                   ),
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    Navigator.pop(context);
-                  },
-                  child: const Text(
-                    'Voltar para o App',
+                  const SizedBox(height: 20),
+
+                  Text(
+                    'Quiz Concluído!',
                     style: TextStyle(
                       fontFamily: 'Raleway',
-                      fontWeight: FontWeight.w800,
-                      fontSize: 15,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: isDark ? Colors.white : _kBlack,
                     ),
                   ),
-                ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '$_acertos de $total perguntas corretas',
+                    style: TextStyle(
+                      fontFamily: 'Raleway',
+                      fontSize: 14,
+                      color: isDark ? Colors.white54 : Colors.black45,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Barra de desempenho
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: LinearProgressIndicator(
+                      value: total > 0 ? _acertos / total : 0,
+                      minHeight: 8,
+                      backgroundColor: isDark ? Colors.white12 : Colors.black12,
+                      valueColor: const AlwaysStoppedAnimation(_kRed),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      '$pct%',
+                      style: const TextStyle(
+                        fontFamily: 'Raleway',
+                        fontWeight: FontWeight.w700,
+                        color: _kRed,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Badge de streak
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      color: _kGold.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: _kGold.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('🔥', style: TextStyle(fontSize: 22)),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Ofensiva: $streak dias',
+                          style: const TextStyle(
+                            fontFamily: 'Raleway',
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                            color: _kGold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _kRed,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        elevation: 4,
+                        shadowColor: _kRed.withValues(alpha: 0.4),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        Navigator.pop(context);
+                      },
+                      child: const Text(
+                        'Voltar para o App',
+                        style: TextStyle(
+                          fontFamily: 'Raleway',
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
 
@@ -302,7 +322,8 @@ class _QuizScreenState extends State<QuizScreen>
     if (_jaRespondeuHoje) return _TelaJaRespondeu(isDark: isDark);
     if (_perguntas.isEmpty) return _TelaSemQuiz(isDark: isDark);
 
-    final perguntaAtual = _perguntas[_indiceAtual].data() as Map<String, dynamic>;
+    final perguntaAtual =
+        _perguntas[_indiceAtual].data() as Map<String, dynamic>;
     final List<dynamic> opcoes = perguntaAtual['opcoes'];
     final int? correta = perguntaAtual['respostaCorreta'] as int?;
     final total = _perguntas.length;
@@ -317,8 +338,11 @@ class _QuizScreenState extends State<QuizScreen>
             pinned: true,
             backgroundColor: _kRed,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new,
-                  color: Colors.white, size: 18),
+              icon: const Icon(
+                Icons.arrow_back_ios_new,
+                color: Colors.white,
+                size: 18,
+              ),
               onPressed: () => Navigator.pop(context),
             ),
             flexibleSpace: FlexibleSpaceBar(
@@ -333,9 +357,11 @@ class _QuizScreenState extends State<QuizScreen>
                 child: Stack(
                   children: [
                     Positioned(
-                      right: -20, top: -20,
+                      right: -20,
+                      top: -20,
                       child: Container(
-                        width: 140, height: 140,
+                        width: 140,
+                        height: 140,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: Colors.white.withValues(alpha: 0.04),
@@ -343,9 +369,11 @@ class _QuizScreenState extends State<QuizScreen>
                       ),
                     ),
                     Positioned(
-                      right: 30, bottom: -30,
+                      right: 30,
+                      bottom: -30,
                       child: Container(
-                        width: 100, height: 100,
+                        width: 100,
+                        height: 100,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: Colors.white.withValues(alpha: 0.03),
@@ -362,21 +390,27 @@ class _QuizScreenState extends State<QuizScreen>
                               mainAxisAlignment: MainAxisAlignment.end,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(children: [
-                                  const Text('🧠',
-                                      style: TextStyle(fontSize: 14)),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'QUIZ',
-                                    style: TextStyle(
-                                      color: Colors.white.withValues(alpha: 0.7),
-                                      fontSize: 12,
-                                      letterSpacing: 3,
-                                      fontFamily: 'Raleway',
-                                      fontWeight: FontWeight.w600,
+                                Row(
+                                  children: [
+                                    const Text(
+                                      '🧠',
+                                      style: TextStyle(fontSize: 14),
                                     ),
-                                  ),
-                                ]),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'QUIZ',
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.7,
+                                        ),
+                                        fontSize: 12,
+                                        letterSpacing: 3,
+                                        fontFamily: 'Raleway',
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                                 const SizedBox(height: 2),
                                 const Text(
                                   'Histórico',
@@ -394,7 +428,9 @@ class _QuizScreenState extends State<QuizScreen>
                           // Badge de progresso
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 8),
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
                             decoration: BoxDecoration(
                               color: _kGold,
                               borderRadius: BorderRadius.circular(20),
@@ -423,12 +459,8 @@ class _QuizScreenState extends State<QuizScreen>
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-
                 // Barra de progresso animada
-                _ProgressBar(
-                  animation: _progressAnim,
-                  isDark: isDark,
-                ),
+                _ProgressBar(animation: _progressAnim, isDark: isDark),
                 const SizedBox(height: 20),
 
                 // Card da pergunta
@@ -480,10 +512,10 @@ class _QuizScreenState extends State<QuizScreen>
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _kRed,
                         foregroundColor: Colors.white,
-                        disabledBackgroundColor:
-                            _kRed.withValues(alpha: 0.4),
+                        disabledBackgroundColor: _kRed.withValues(alpha: 0.4),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16)),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                         elevation: 4,
                         shadowColor: _kRed.withValues(alpha: 0.35),
                       ),
@@ -539,16 +571,19 @@ class _ProgressBar extends StatelessWidget {
       children: [
         AnimatedBuilder(
           animation: animation,
-          builder: (_, __) => ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: LinearProgressIndicator(
-              value: animation.value,
-              minHeight: 6,
-              backgroundColor:
-                  isDark ? Colors.white12 : Colors.black.withValues(alpha: 0.08),
-              valueColor: const AlwaysStoppedAnimation(_kRed),
-            ),
-          ),
+          builder:
+              (_, __) => ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: LinearProgressIndicator(
+                  value: animation.value,
+                  minHeight: 6,
+                  backgroundColor:
+                      isDark
+                          ? Colors.white12
+                          : Colors.black.withValues(alpha: 0.08),
+                  valueColor: const AlwaysStoppedAnimation(_kRed),
+                ),
+              ),
         ),
       ],
     );
@@ -573,17 +608,18 @@ class _PerguntaCard extends StatelessWidget {
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        gradient: isDark
-            ? const LinearGradient(
-                colors: [Color(0xFF1C1C1C), Color(0xFF232323)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              )
-            : const LinearGradient(
-                colors: [Colors.white, Color(0xFFFFF5F5)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+        gradient:
+            isDark
+                ? const LinearGradient(
+                  colors: [Color(0xFF1C1C1C), Color(0xFF232323)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+                : const LinearGradient(
+                  colors: [Colors.white, Color(0xFFFFF5F5)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
         boxShadow: [
           BoxShadow(
             color: _kRed.withValues(alpha: 0.12),
@@ -608,20 +644,22 @@ class _PerguntaCard extends StatelessWidget {
                   end: Alignment.centerRight,
                 ),
               ),
-              child: Row(children: [
-                const Icon(Icons.quiz_rounded, color: Colors.white, size: 13),
-                const SizedBox(width: 7),
-                Text(
-                  'PERGUNTA ${indice + 1}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    fontFamily: 'Raleway',
-                    letterSpacing: 2,
+              child: Row(
+                children: [
+                  const Icon(Icons.quiz_rounded, color: Colors.white, size: 13),
+                  const SizedBox(width: 7),
+                  Text(
+                    'PERGUNTA ${indice + 1}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      fontFamily: 'Raleway',
+                      letterSpacing: 2,
+                    ),
                   ),
-                ),
-              ]),
+                ],
+              ),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
@@ -673,52 +711,60 @@ class _OpcaoCard extends StatelessWidget {
     switch (estado) {
       case OpcaoEstado.correta:
         borderColor = const Color(0xFF43A047).withValues(alpha: 0.6);
-        bgColor     = const Color(0xFF43A047).withValues(alpha: 0.1);
-        letraBg     = const Color(0xFF43A047);
-        letraColor  = Colors.white;
-        textColor   = const Color(0xFF43A047);
-        trailingIcon = const Icon(Icons.check_circle_rounded,
-            color: Color(0xFF43A047), size: 20);
+        bgColor = const Color(0xFF43A047).withValues(alpha: 0.1);
+        letraBg = const Color(0xFF43A047);
+        letraColor = Colors.white;
+        textColor = const Color(0xFF43A047);
+        trailingIcon = const Icon(
+          Icons.check_circle_rounded,
+          color: Color(0xFF43A047),
+          size: 20,
+        );
         break;
       case OpcaoEstado.errada:
         borderColor = _kRed.withValues(alpha: 0.5);
-        bgColor     = _kRed.withValues(alpha: 0.08);
-        letraBg     = _kRed;
-        letraColor  = Colors.white;
-        textColor   = _kRed;
-        trailingIcon = Icon(Icons.cancel_rounded,
-            color: _kRed.withValues(alpha: 0.7), size: 20);
+        bgColor = _kRed.withValues(alpha: 0.08);
+        letraBg = _kRed;
+        letraColor = Colors.white;
+        textColor = _kRed;
+        trailingIcon = Icon(
+          Icons.cancel_rounded,
+          color: _kRed.withValues(alpha: 0.7),
+          size: 20,
+        );
         break;
       case OpcaoEstado.selecionada:
         borderColor = _kRed;
-        bgColor     = _kRed.withValues(alpha: 0.08);
-        letraBg     = _kRed;
-        letraColor  = Colors.white;
-        textColor   = isDark ? Colors.white : _kBlack;
+        bgColor = _kRed.withValues(alpha: 0.08);
+        letraBg = _kRed;
+        letraColor = Colors.white;
+        textColor = isDark ? Colors.white : _kBlack;
         break;
       case OpcaoEstado.inativa:
-        borderColor = isDark
-            ? Colors.white.withValues(alpha: 0.06)
-            : Colors.black.withValues(alpha: 0.06);
-        bgColor     = Colors.transparent;
-        letraBg     = isDark
-            ? Colors.white.withValues(alpha: 0.06)
-            : Colors.black.withValues(alpha: 0.05);
-        letraColor  = isDark ? Colors.white24 : Colors.black26;
-        textColor   = isDark ? Colors.white24 : Colors.black26;
+        borderColor =
+            isDark
+                ? Colors.white.withValues(alpha: 0.06)
+                : Colors.black.withValues(alpha: 0.06);
+        bgColor = Colors.transparent;
+        letraBg =
+            isDark
+                ? Colors.white.withValues(alpha: 0.06)
+                : Colors.black.withValues(alpha: 0.05);
+        letraColor = isDark ? Colors.white24 : Colors.black26;
+        textColor = isDark ? Colors.white24 : Colors.black26;
         break;
       case OpcaoEstado.normal:
-        borderColor = isDark
-            ? Colors.white.withValues(alpha: 0.10)
-            : Colors.black.withValues(alpha: 0.08);
-        bgColor     = isDark
-            ? const Color(0xFF1C1C1C)
-            : Colors.white;
-        letraBg     = isDark
-            ? Colors.white.withValues(alpha: 0.08)
-            : _kRed.withValues(alpha: 0.08);
-        letraColor  = _kRed;
-        textColor   = isDark ? Colors.white : _kBlack;
+        borderColor =
+            isDark
+                ? Colors.white.withValues(alpha: 0.10)
+                : Colors.black.withValues(alpha: 0.08);
+        bgColor = isDark ? const Color(0xFF1C1C1C) : Colors.white;
+        letraBg =
+            isDark
+                ? Colors.white.withValues(alpha: 0.08)
+                : _kRed.withValues(alpha: 0.08);
+        letraColor = _kRed;
+        textColor = isDark ? Colors.white : _kBlack;
         break;
     }
 
@@ -729,15 +775,16 @@ class _OpcaoCard extends StatelessWidget {
         color: bgColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: borderColor, width: 1.5),
-        boxShadow: estado == OpcaoEstado.normal
-            ? [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ]
-            : null,
+        boxShadow:
+            estado == OpcaoEstado.normal
+                ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+                : null,
       ),
       child: Material(
         color: Colors.transparent,
@@ -812,8 +859,11 @@ class _TelaJaRespondeu extends StatelessWidget {
             pinned: true,
             backgroundColor: _kRed,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new,
-                  color: Colors.white, size: 18),
+              icon: const Icon(
+                Icons.arrow_back_ios_new,
+                color: Colors.white,
+                size: 18,
+              ),
               onPressed: () => Navigator.pop(context),
             ),
             flexibleSpace: FlexibleSpaceBar(
@@ -831,25 +881,31 @@ class _TelaJaRespondeu extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.end,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(children: [
-                        const Text('🧠', style: TextStyle(fontSize: 14)),
-                        const SizedBox(width: 6),
-                        Text('QUIZ',
+                      Row(
+                        children: [
+                          const Text('🧠', style: TextStyle(fontSize: 14)),
+                          const SizedBox(width: 6),
+                          Text(
+                            'QUIZ',
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.7),
                               fontSize: 12,
                               letterSpacing: 3,
                               fontFamily: 'Raleway',
                               fontWeight: FontWeight.w600,
-                            )),
-                      ]),
-                      const Text('Histórico',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 28,
-                            fontFamily: 'Raleway',
-                            fontWeight: FontWeight.w900,
-                          )),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Text(
+                        'Histórico',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontFamily: 'Raleway',
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -863,15 +919,19 @@ class _TelaJaRespondeu extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    width: 96, height: 96,
+                    width: 96,
+                    height: 96,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: _kGold.withValues(alpha: 0.12),
                       border: Border.all(
-                          color: _kGold.withValues(alpha: 0.3), width: 2),
+                        color: _kGold.withValues(alpha: 0.3),
+                        width: 2,
+                      ),
                     ),
                     child: const Center(
-                        child: Text('✅', style: TextStyle(fontSize: 44))),
+                      child: Text('✅', style: TextStyle(fontSize: 44)),
+                    ),
                   ),
                   const SizedBox(height: 24),
                   Text(
@@ -904,7 +964,8 @@ class _TelaJaRespondeu extends StatelessWidget {
                         backgroundColor: _kRed,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16)),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                         elevation: 4,
                         shadowColor: _kRed.withValues(alpha: 0.35),
                       ),
@@ -942,8 +1003,10 @@ class _TelaSemQuiz extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: _kRed,
         foregroundColor: Colors.white,
-        title: const Text('Quiz Histórico',
-            style: TextStyle(fontFamily: 'Raleway', fontWeight: FontWeight.w800)),
+        title: const Text(
+          'Quiz Histórico',
+          style: TextStyle(fontFamily: 'Raleway', fontWeight: FontWeight.w800),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, size: 18),
           onPressed: () => Navigator.pop(context),
@@ -956,23 +1019,30 @@ class _TelaSemQuiz extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 90, height: 90,
+                width: 90,
+                height: 90,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: _kRed.withValues(alpha: 0.1),
                 ),
                 child: const Center(
-                    child: Icon(Icons.hourglass_empty_rounded,
-                        size: 42, color: _kRed)),
+                  child: Icon(
+                    Icons.hourglass_empty_rounded,
+                    size: 42,
+                    color: _kRed,
+                  ),
+                ),
               ),
               const SizedBox(height: 20),
-              Text('Nenhum quiz hoje',
-                  style: TextStyle(
-                    fontFamily: 'Raleway',
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    color: isDark ? Colors.white : _kBlack,
-                  )),
+              Text(
+                'Nenhum quiz hoje',
+                style: TextStyle(
+                  fontFamily: 'Raleway',
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: isDark ? Colors.white : _kBlack,
+                ),
+              ),
               const SizedBox(height: 8),
               Text(
                 'O quiz do dia ainda não foi publicado.\nVolte mais tarde! ⏳',

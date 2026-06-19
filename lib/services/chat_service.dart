@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/src/widgets/framework.dart';
 
 class ChatService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -65,7 +64,7 @@ class ChatService {
       });
 
       // Aproveita a entrada para limpar usuários inativos da sala
-      limparUsuariosInativos(roomName);
+      await limparUsuariosInativos(roomName);
     }
   }
 
@@ -95,9 +94,7 @@ class ChatService {
           .doc(roomName)
           .collection('usersOnline')
           .doc(user.uid)
-          .update({
-            'lastSeen': FieldValue.serverTimestamp(),
-          });
+          .update({'lastSeen': FieldValue.serverTimestamp()});
     }
   }
 
@@ -105,15 +102,18 @@ class ChatService {
   Future<void> limparUsuariosInativos(String roomName) async {
     try {
       // Define o ponto de corte (Tempo atual menos 5 minutos)
-      final limiteInatividade = DateTime.now().subtract(const Duration(minutes: 5));
-      
+      final limiteInatividade = DateTime.now().subtract(
+        const Duration(minutes: 5),
+      );
+
       // Busca usuários cujo 'lastSeen' seja anterior ao limite de 5 minutos
-      final snapshot = await _firestore
-          .collection('chats')
-          .doc(roomName)
-          .collection('usersOnline')
-          .where('lastSeen', isLessThan: limiteInatividade)
-          .get();
+      final snapshot =
+          await _firestore
+              .collection('chats')
+              .doc(roomName)
+              .collection('usersOnline')
+              .where('lastSeen', isLessThan: limiteInatividade)
+              .get();
 
       if (snapshot.docs.isEmpty) return;
 
@@ -134,7 +134,9 @@ class ChatService {
         await _firestore.collection('salas').doc(roomName).update({
           'usuarios': FieldValue.arrayRemove(uidsRemover),
         });
-        print("${uidsRemover.length} usuários inativos foram removidos da sala $roomName.");
+        print(
+          "${uidsRemover.length} usuários inativos foram removidos da sala $roomName.",
+        );
       }
     } catch (e) {
       print("Erro ao limpar usuários inativos: $e");
@@ -202,7 +204,7 @@ class ChatService {
 
       // --- ATUALIZA E LIMPA INATIVOS ---
       await atualizarAtividade(roomName);
-      limparUsuariosInativos(roomName);
+      await limparUsuariosInativos(roomName);
 
       print("Áudio enviado com sucesso para a sala $roomName!");
     } catch (e) {
@@ -212,7 +214,12 @@ class ChatService {
   }
 
   // --- ENVIO DE MENSAGEM DE TEXTO ---
-  Future<void> enviarMensagem(String roomName, String text, String nomeUsuario, String photoUrl) async {
+  Future<void> enviarMensagem(
+    String roomName,
+    String text,
+    String nomeUsuario,
+    String photoUrl,
+  ) async {
     final user = _auth.currentUser;
     if (user == null) return;
 
@@ -231,6 +238,6 @@ class ChatService {
 
     // --- ATUALIZA E LIMPA INATIVOS ---
     await atualizarAtividade(roomName);
-    limparUsuariosInativos(roomName);
+    await limparUsuariosInativos(roomName);
   }
 }

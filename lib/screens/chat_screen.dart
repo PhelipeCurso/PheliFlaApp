@@ -1,5 +1,4 @@
-import 'dart:io';
-import 'dart:async'; // --- ADICIONADO: Necessário para usar o Timer ---
+import 'dart:async'; // Timer for presence tracking
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -33,8 +32,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 
   String? nomeDaSala;
   String selectedBackground = 'assets/images/fundos/PheliFlafundo.png';
-  
-  // --- ADICIONADO: Declaração do Timer de presença ---
+
   Timer? _presenceTimer;
 
   final List<String> backgroundImages = const [
@@ -56,30 +54,45 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     _initializeRoom();
 
     // --- ADICIONADO: Inicializa o Timer para atualizar a atividade a cada 3 minutos ---
-    _presenceTimer = Timer.periodic(const Duration(minutes: 3), (timer) {
-      _chatService.atualizarAtividade(widget.roomName);
+    _presenceTimer = Timer.periodic(const Duration(minutes: 3), (timer) async {
+      try {
+        await _chatService.atualizarAtividade(widget.roomName);
+      } catch (e) {
+        debugPrint('Falha ao atualizar atividade: $e');
+      }
     });
   }
 
   Future<void> _initializeRoom() async {
-    await _chatService.criarSalaSeNaoExistir(widget.roomName);
-    
-    await FirebaseMessaging.instance.subscribeToTopic(widget.roomName);
-    print("✅ Inscrito no tópico da sala: ${widget.roomName}");
-
-    _setUsuarioOnline(true);
-    _carregarNomeSala();
+    try {
+      await _chatService.criarSalaSeNaoExistir(widget.roomName);
+      await FirebaseMessaging.instance.subscribeToTopic(widget.roomName);
+      debugPrint('✅ Inscrito no tópico da sala: ${widget.roomName}');
+      await _setUsuarioOnline(true);
+      _carregarNomeSala();
+    } catch (e) {
+      debugPrint('Erro ao inicializar sala de chat: $e');
+    }
   }
 
-  void _setUsuarioOnline(bool isOnline) {
+  Future<void> _setUsuarioOnline(bool isOnline) async {
     if (isOnline) {
-      _chatService.adicionarUsuarioOnline(
+      await _chatService.adicionarUsuarioOnline(
         widget.roomName,
         widget.nomeUsuario,
         widget.photoUrl,
       );
     } else {
-      _chatService.removerUsuarioOnline(widget.roomName);
+      await _chatService.removerUsuarioOnline(widget.roomName);
+    }
+  }
+
+  Future<void> _unsubscribeFromTopic() async {
+    try {
+      await FirebaseMessaging.instance.unsubscribeFromTopic(widget.roomName);
+      debugPrint('❌ Desinscrito do tópico da sala: ${widget.roomName}');
+    } catch (e) {
+      debugPrint('Falha ao desinscrever do tópico: $e');
     }
   }
 
@@ -87,7 +100,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _setUsuarioOnline(true);
-    } else if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+    } else if (state == AppLifecycleState.detached) {
       _setUsuarioOnline(false);
     }
   }
@@ -111,31 +124,32 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => GridView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: backgroundImages.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 0.8,
-        ),
-        itemBuilder: (_, index) {
-          final bg = backgroundImages[index];
-          return GestureDetector(
-            onTap: () async {
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.setString('chatBackground', bg);
-              if (mounted) setState(() => selectedBackground = bg);
-              Navigator.pop(context);
-            },
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.asset(bg, fit: BoxFit.cover),
+      builder:
+          (_) => GridView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: backgroundImages.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 0.8,
             ),
-          );
-        },
-      ),
+            itemBuilder: (_, index) {
+              final bg = backgroundImages[index];
+              return GestureDetector(
+                onTap: () async {
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.setString('chatBackground', bg);
+                  if (mounted) setState(() => selectedBackground = bg);
+                  Navigator.pop(context);
+                },
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.asset(bg, fit: BoxFit.cover),
+                ),
+              );
+            },
+          ),
     );
   }
 
@@ -145,6 +159,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     _presenceTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _setUsuarioOnline(false);
+    _unsubscribeFromTopic();
     super.dispose();
   }
 
@@ -175,15 +190,22 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
             onPressed: _selecionarFundo,
           ),
           IconButton(
-            icon: const Icon(Icons.arrow_back), // Mudado para ícone de voltar mais amigável
+            icon: const Icon(
+              Icons.arrow_back,
+            ), // Mudado para ícone de voltar mais amigável
             tooltip: 'Voltar para Salas',
-            onPressed: () {
+            onPressed: () async {
               // 1. Remove o usuário da lista online da sala atual
-              _setUsuarioOnline(false);
-              
+              await _setUsuarioOnline(false);
+              await _unsubscribeFromTopic();
+
               // 2. Redireciona para a seleção de salas mantendo o usuário logado (sem signOut)
               if (mounted) {
-                Navigator.pushNamedAndRemoveUntil(context, '/room-selection', (_) => false);
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/room-selection',
+                  (_) => false,
+                );
               }
             },
           ),
@@ -201,18 +223,20 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
             children: [
               Expanded(child: _buildMessagesStream(currentUser?.uid)),
               ChatInputField(
-                onSendMessage: (text) => _chatService.enviarMensagem(
-                  widget.roomName,
-                  text,
-                  widget.nomeUsuario,
-                  widget.photoUrl,
-                ),
-                onSendAudio: (path) => _chatService.enviarAudio(
-                  widget.roomName,
-                  path,
-                  widget.nomeUsuario,
-                  widget.photoUrl,
-                ),
+                onSendMessage:
+                    (text) => _chatService.enviarMensagem(
+                      widget.roomName,
+                      text,
+                      widget.nomeUsuario,
+                      widget.photoUrl,
+                    ),
+                onSendAudio:
+                    (path) => _chatService.enviarAudio(
+                      widget.roomName,
+                      path,
+                      widget.nomeUsuario,
+                      widget.photoUrl,
+                    ),
               ),
             ],
           ),
@@ -223,12 +247,27 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 
   Widget _buildOnlineCounter() {
     return StreamBuilder<QuerySnapshot>(
-      stream: _firestore
-          .collection('chats')
-          .doc(widget.roomName)
-          .collection('usersOnline')
-          .snapshots(),
+      stream:
+          _firestore
+              .collection('chats')
+              .doc(widget.roomName)
+              .collection('usersOnline')
+              .snapshots(),
       builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.black26,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Text(
+              '--',
+              style: TextStyle(fontSize: 14, color: Colors.white),
+            ),
+          );
+        }
+
         final onlineCount = snapshot.data?.docs.length ?? 0;
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -253,15 +292,26 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 
   Widget _buildMessagesStream(String? currentUserId) {
     return StreamBuilder<QuerySnapshot>(
-      stream: _firestore
-          .collection('chats')
-          .doc(widget.roomName)
-          .collection('messages')
-          .orderBy('createdAt', descending: true)
-          .snapshots(),
+      stream:
+          _firestore
+              .collection('chats')
+              .doc(widget.roomName)
+              .collection('messages')
+              .orderBy('createdAt', descending: true)
+              .snapshots(),
       builder: (ctx, snapshot) {
+        if (snapshot.hasError) {
+          return Center(
+            child: Text(
+              'Erro ao carregar mensagens.',
+              style: TextStyle(color: Colors.white.withOpacity(0.9)),
+            ),
+          );
+        }
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: Colors.white));
+          return const Center(
+            child: CircularProgressIndicator(color: Colors.white),
+          );
         }
         final messages = snapshot.data?.docs ?? [];
         return ListView.builder(
@@ -316,6 +366,7 @@ class _ChatInputFieldState extends State<ChatInputField> {
     if (text.isNotEmpty) {
       widget.onSendMessage(text);
       _controller.clear();
+      FocusScope.of(context).unfocus();
     }
   }
 
@@ -323,12 +374,28 @@ class _ChatInputFieldState extends State<ChatInputField> {
     try {
       if (await _audioRecorder.hasPermission()) {
         final directory = await getApplicationDocumentsDirectory();
-        final path = '${directory.path}/audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
+        final path =
+            '${directory.path}/audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
         await _audioRecorder.start(const RecordConfig(), path: path);
         setState(() => _isRecording = true);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Permissão de microfone necessária para gravar áudio.',
+              ),
+            ),
+          );
+        }
       }
     } catch (e) {
-      print("Erro ao iniciar gravação: $e");
+      debugPrint("Erro ao iniciar gravação: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Erro ao iniciar gravação de áudio.')),
+        );
+      }
     }
   }
 
@@ -365,14 +432,20 @@ class _ChatInputFieldState extends State<ChatInputField> {
               textCapitalization: TextCapitalization.sentences,
               maxLines: null,
               decoration: InputDecoration(
-                hintText: _isRecording ? '🎤 Gravando áudio...' : 'Digite sua mensagem...',
+                hintText:
+                    _isRecording
+                        ? '🎤 Gravando áudio...'
+                        : 'Digite sua mensagem...',
                 filled: true,
                 fillColor: Colors.grey[200],
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
               ),
             ),
           ),
@@ -385,7 +458,9 @@ class _ChatInputFieldState extends State<ChatInputField> {
               radius: 24,
               child: IconButton(
                 icon: Icon(
-                  _showMic ? (_isRecording ? Icons.mic : Icons.mic_none) : Icons.send,
+                  _showMic
+                      ? (_isRecording ? Icons.mic : Icons.mic_none)
+                      : Icons.send,
                   color: Colors.white,
                 ),
                 onPressed: _showMic ? null : _submitText,
@@ -409,35 +484,60 @@ class MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isAudio = msgData['type'] == 'audio';
-    final hasPhoto = msgData['photoUrl'] != null && msgData['photoUrl'].toString().isNotEmpty;
+    final hasPhoto =
+        msgData['photoUrl'] != null &&
+        msgData['photoUrl'].toString().isNotEmpty;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Row(
-        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment:
+            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMe) _buildAvatar(hasPhoto, msgData['photoUrl']),
           Flexible(
             child: Container(
-              margin: EdgeInsets.only(left: isMe ? 40 : 8, right: isMe ? 8 : 40),
+              margin: EdgeInsets.only(
+                left: isMe ? 40 : 8,
+                right: isMe ? 8 : 40,
+              ),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: isMe ? Colors.red[800] : Colors.white,
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(16),
                   topRight: const Radius.circular(16),
-                  bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(4),
-                  bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(16),
+                  bottomLeft:
+                      isMe
+                          ? const Radius.circular(16)
+                          : const Radius.circular(4),
+                  bottomRight:
+                      isMe
+                          ? const Radius.circular(4)
+                          : const Radius.circular(16),
                 ),
-                boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
               ),
               child: Column(
-                crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                crossAxisAlignment:
+                    isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                 children: [
                   if (!isMe) ...[
-                    Text(msgData['userName'] ?? 'Usuário',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.red[900])),
+                    Text(
+                      msgData['userName'] ?? 'Usuário',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: Colors.red[900],
+                      ),
+                    ),
                     const SizedBox(height: 4),
                   ],
                   if (isAudio && msgData['mediaUrl'] != null)
@@ -445,13 +545,19 @@ class MessageBubble extends StatelessWidget {
                   else
                     Text(
                       msgData['text'] ?? '',
-                      style: TextStyle(color: isMe ? Colors.white : Colors.black87, fontSize: 15),
+                      style: TextStyle(
+                        color: isMe ? Colors.white : Colors.black87,
+                        fontSize: 15,
+                      ),
                     ),
 
                   const SizedBox(height: 4),
                   Text(
                     _formatTime(msgData['createdAt']),
-                    style: TextStyle(fontSize: 10, color: isMe ? Colors.white70 : Colors.black54),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: isMe ? Colors.white70 : Colors.black54,
+                    ),
                   ),
                 ],
               ),
@@ -466,9 +572,10 @@ class MessageBubble extends StatelessWidget {
     return CircleAvatar(
       radius: 16,
       backgroundColor: Colors.grey[300],
-      backgroundImage: hasPhoto 
-          ? NetworkImage(url!) 
-          : const AssetImage('assets/images/Gaming.png') as ImageProvider,
+      backgroundImage:
+          hasPhoto
+              ? NetworkImage(url!)
+              : const AssetImage('assets/images/Gaming.png') as ImageProvider,
     );
   }
 
@@ -498,7 +605,6 @@ class AudioPlayerWidget extends StatefulWidget {
 class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
   late AudioPlayer _audioPlayer;
   bool _isPlaying = false;
-  Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
 
   @override
@@ -511,7 +617,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
     });
 
     _audioPlayer.onDurationChanged.listen((newDuration) {
-      if (mounted) setState(() => _duration = newDuration);
+      // Duration is tracked internally by AudioPlayer
     });
 
     _audioPlayer.onPositionChanged.listen((newPosition) {
@@ -546,7 +652,10 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
         ),
         Text(
           "${_position.inMinutes}:${(_position.inSeconds % 60).toString().padLeft(2, '0')}",
-          style: TextStyle(color: widget.isMe ? Colors.white70 : Colors.black54, fontSize: 12),
+          style: TextStyle(
+            color: widget.isMe ? Colors.white70 : Colors.black54,
+            fontSize: 12,
+          ),
         ),
       ],
     );

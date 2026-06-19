@@ -16,10 +16,8 @@ class _CantoDetalhesScreenState extends State<CantoDetalhesScreen> {
   late AudioPlayer _audioPlayer;
   bool isPlaying = false;
   bool isModoEstadio = false;
-  bool isFavorito = false; // Dica: Integre com seu SharedPreferences/Firestore futuramente
-
-  @override
-  void initParent() {}
+  bool isFavorito =
+      false; // Dica: Integre com seu SharedPreferences/Firestore futuramente
 
   @override
   void initState() {
@@ -76,12 +74,16 @@ class _CantoDetalhesScreenState extends State<CantoDetalhesScreen> {
       backgroundColor: backgroundColor,
       appBar: AppBar(
         title: Text(widget.canto.titulo),
-        backgroundColor: isModoEstadio ? Colors.grey[900] : const Color(0xFFC52026),
+        backgroundColor:
+            isModoEstadio ? Colors.grey[900] : const Color(0xFFC52026),
         foregroundColor: Colors.white,
         actions: [
           // Botão Favoritar
           IconButton(
-            icon: Icon(isFavorito ? Icons.favorite : Icons.favorite_border, color: Colors.white),
+            icon: Icon(
+              isFavorito ? Icons.favorite : Icons.favorite_border,
+              color: Colors.white,
+            ),
             onPressed: () {
               setState(() {
                 isFavorito = !isFavorito;
@@ -90,7 +92,10 @@ class _CantoDetalhesScreenState extends State<CantoDetalhesScreen> {
           ),
           // Botão Modo Estádio
           IconButton(
-            icon: Icon(isModoEstadio ? Icons.stadium : Icons.stadium_outlined, color: isModoEstadio ? Colors.yellow : Colors.white),
+            icon: Icon(
+              isModoEstadio ? Icons.stadium : Icons.stadium_outlined,
+              color: isModoEstadio ? Colors.yellow : Colors.white,
+            ),
             onPressed: _toggleModoEstadio,
           ),
         ],
@@ -100,7 +105,10 @@ class _CantoDetalhesScreenState extends State<CantoDetalhesScreen> {
           // Letra da Música com rolagem
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 20.0,
+              ),
               child: Center(
                 child: Text(
                   widget.canto.letra,
@@ -109,13 +117,14 @@ class _CantoDetalhesScreenState extends State<CantoDetalhesScreen> {
                     color: textColor,
                     fontSize: fontSize,
                     height: 1.6,
-                    fontWeight: isModoEstadio ? FontWeight.bold : FontWeight.normal,
+                    fontWeight:
+                        isModoEstadio ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
               ),
             ),
           ),
-          
+
           // Player de Áudio Inferior (Só aparece se houver áudio cadastrado)
           if (widget.canto.audioUrl.isNotEmpty)
             Container(
@@ -128,7 +137,9 @@ class _CantoDetalhesScreenState extends State<CantoDetalhesScreen> {
                     IconButton(
                       iconSize: 48,
                       icon: Icon(
-                        isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                        isPlaying
+                            ? Icons.pause_circle_filled
+                            : Icons.play_circle_filled,
                         color: const Color(0xFFC52026),
                       ),
                       onPressed: _togglePlayPause,
@@ -138,7 +149,7 @@ class _CantoDetalhesScreenState extends State<CantoDetalhesScreen> {
                       isPlaying ? 'Ouvindo referência...' : 'Ouvir canto',
                       style: TextStyle(
                         color: isModoEstadio ? Colors.white70 : Colors.black87,
-                        fontWeight: FontWeight.w500
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],

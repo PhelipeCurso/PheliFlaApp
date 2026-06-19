@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import '../services/canto_service.dart';
 import '../models/canto_model.dart';
 import 'canto_detalhes_screen.dart';
+import 'package:pheli_fla_app/services/ad_service.dart';
+import 'package:provider/provider.dart';
+import 'package:pheli_fla_app/providers/user_plus_provider.dart';
 
 class CantosListScreen extends StatefulWidget {
   const CantosListScreen({super.key});
@@ -15,12 +18,37 @@ class _CantosListScreenState extends State<CantosListScreen> {
   final CantoService _cantoService = CantoService();
 
   @override
+  void initState() {
+    super.initState();
+    // Inicializa e carrega um interstitial ao abrir a tela
+    AdService.instance.initialize().then((_) {
+      if (mounted) {
+        final isPlusUser =
+            Provider.of<UserPlusProvider>(context, listen: false).isPremium;
+        AdService.instance.loadInterstitial(
+          showOnLoad: true,
+          isPlusUser: isPlusUser,
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    AdService.instance.disposeInterstitial();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Cantos e Hinos', style: TextStyle(fontWeight: FontWeight.bold)),
+          title: const Text(
+            'Cantos e Hinos',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           backgroundColor: const Color(0xFFC52026), // Vermelho do Mengão
           foregroundColor: Colors.white,
           bottom: const TabBar(
@@ -38,18 +66,27 @@ class _CantosListScreenState extends State<CantosListScreen> {
           stream: _cantoService.getCantos(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator(color: Color(0xFFC52026)));
+              return const Center(
+                child: CircularProgressIndicator(color: Color(0xFFC52026)),
+              );
             }
             if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return const Center(child: Text('Nenhum canto cadastrado ainda.'));
+              return const Center(
+                child: Text('Nenhum canto cadastrado ainda.'),
+              );
             }
 
             List<CantoModel> todosOsCantos = snapshot.data!;
 
             // Filtra as listas por categoria de acordo com o value do select do React
-            List<CantoModel> oficiais = todosOsCantos.where((c) => c.categoria == 'oficial').toList();
-            List<CantoModel> classicos = todosOsCantos.where((c) => c.categoria == 'arquibancada').toList();
-            List<CantoModel> recentes = todosOsCantos.where((c) => c.categoria == 'recentes').toList();
+            List<CantoModel> oficiais =
+                todosOsCantos.where((c) => c.categoria == 'oficial').toList();
+            List<CantoModel> classicos =
+                todosOsCantos
+                    .where((c) => c.categoria == 'arquibancada')
+                    .toList();
+            List<CantoModel> recentes =
+                todosOsCantos.where((c) => c.categoria == 'recentes').toList();
 
             return TabBarView(
               children: [
@@ -76,7 +113,10 @@ class _CantosListScreenState extends State<CantosListScreen> {
           margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: ListTile(
             leading: const Icon(Icons.music_note, color: Color(0xFFC52026)),
-            title: Text(canto.titulo, style: const TextStyle(fontWeight: FontWeight.bold)),
+            title: Text(
+              canto.titulo,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: () {
               Navigator.push(

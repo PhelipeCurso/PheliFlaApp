@@ -1,25 +1,18 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:pheli_fla_app/config_screenTheme.dart';
-import 'package:pheli_fla_app/screens/cantos_list_screen.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:http/http.dart' as http;
-import 'package:html/parser.dart' as htmlParser;
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-// Seus imports
+import 'package:pheli_fla_app/constants/app_constants.dart';
 import 'package:pheli_fla_app/gen_l10n/app_localizations.dart';
+
+import 'package:pheli_fla_app/widgets/custom_drawer.dart';
+import 'package:pheli_fla_app/services/home_service.dart';
 import 'package:pheli_fla_app/services/rss_service.dart';
 import 'package:pheli_fla_app/pages/noticias_page_coluna.dart';
-import 'ge_news.dart';
 import 'PheliFla_youtube.dart';
 import 'package:pheli_fla_app/widgets/news_card.dart';
-import 'package:pheli_fla_app/pages/agenda_rubro_negra_page.dart';
-import 'package:pheli_fla_app/screens/escolha_loja_screen.dart';
-import 'package:pheli_fla_app/screens/assinatura_plus_screen.dart';
-import 'NoticiaDetalhePage.dart';
+import 'package:pheli_fla_app/widgets/phelifla_card.dart';
+import 'package:pheli_fla_app/screens/NoticiaDetalhePage.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomeScreen extends StatefulWidget {
   final String nomeUsuario;
@@ -40,6 +33,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final HomeService _homeService = HomeService();
+
   late bool isDarkMode;
   int _selectedIndex = 0;
 
@@ -51,8 +46,8 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     isDarkMode = widget.isDarkMode;
-    noticiasPheliFla = _buscarNoticiasPheliFla();
-    noticiasGE = _buscarNoticiasGE();
+    noticiasPheliFla = _homeService.fetchNoticiasPheliFla();
+    noticiasGE = _homeService.fetchNoticiasGE();
     noticiasColuna = fetchColunaFlaRSS();
   }
 
@@ -64,68 +59,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       debugPrint('Não foi possível abrir o link: $url');
-    }
-  }
-
-  // --- BUSCA FIRESTORE (SUAS POSTAGENS) ---
-  Future<List<Map<String, String>>> _buscarNoticiasPheliFla() async {
-    try {
-      final snapshot =
-          await FirebaseFirestore.instance
-              .collection('noticias')
-              .orderBy('dataCriacao', descending: true)
-              .get();
-
-      return snapshot.docs.map((doc) {
-        final data = doc.data();
-        return {
-          'titulo': data['titulo']?.toString() ?? 'Sem título',
-          'link': data['id']?.toString() ?? '',
-          'imagem': data['imagemUrl']?.toString() ?? '',
-          'conteudo': data['conteudo']?.toString() ?? '',
-          // --- ADICIONADO: BUSCA DO CAMPO DE AUTORIA ---
-          'autor': data['autor']?.toString() ?? 'Redação PheliFla',
-        };
-      }).toList();
-    } catch (e) {
-      debugPrint('Erro Firestore PheliFla: $e');
-      return [];
-    }
-  }
-
-  // --- BUSCA GE (SCRAPING) ---
-  Future<List<Map<String, String>>> _buscarNoticiasGE() async {
-    try {
-      final response = await http.get(
-        Uri.parse('https://ge.globo.com/futebol/times/flamengo/'),
-        headers: {"User-Agent": "Mozilla/5.0"},
-      );
-
-      if (response.statusCode == 200) {
-        final document = htmlParser.parse(response.body);
-        final elements = document.querySelectorAll('.feed-post-body');
-        List<Map<String, String>> resultados = [];
-
-        for (var element in elements) {
-          final linkElement = element.querySelector('.feed-post-link');
-          final link = linkElement?.attributes['href'] ?? '';
-          if (link.contains('globo.com')) {
-            final titulo = linkElement?.text.trim() ?? 'Sem título';
-            final img =
-                element.parent?.querySelector('img')?.attributes['src'] ?? '';
-            resultados.add({
-              'titulo': titulo,
-              'link': link.startsWith('http') ? link : 'https:$link',
-              'imagem': img,
-            });
-          }
-          if (resultados.length >= 10) break;
-        }
-        return resultados;
-      }
-      return [];
-    } catch (e) {
-      return [];
     }
   }
 
@@ -174,15 +107,22 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_getAppBarTitle()),
-        backgroundColor: Colors.red[800],
+        backgroundColor: AppColors.primaryRed,
         elevation: 0,
       ),
-      drawer: _buildCustomDrawer(),
+      drawer: CustomDrawer(
+        user: FirebaseAuth.instance.currentUser,
+        nomeUsuario: widget.nomeUsuario,
+        isDarkMode: isDarkMode,
+        onThemeChanged: toggleTheme,
+        onLogout: () => _logout(context),
+        onTicketsTap: _abrirSiteIngressos,
+      ),
       body: IndexedStack(index: _selectedIndex, children: _tabs),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
-        selectedItemColor: Colors.red[800],
+        selectedItemColor: AppColors.primaryRed,
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
         items: [
@@ -192,15 +132,15 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           BottomNavigationBarItem(
             icon: const Icon(Icons.article),
-            label: AppLocalizations.of(context)!.bottomNavGe,
+            label: AppLocalizations.of(context).bottomNavGe,
           ),
           BottomNavigationBarItem(
             icon: const Icon(Icons.chrome_reader_mode),
-            label: AppLocalizations.of(context)!.bottomNavColuna,
+            label: AppLocalizations.of(context).bottomNavColuna,
           ),
           BottomNavigationBarItem(
             icon: const Icon(Icons.video_collection),
-            label: AppLocalizations.of(context)!.bottomNavYoutube,
+            label: AppLocalizations.of(context).bottomNavYoutube,
           ),
         ],
       ),
@@ -212,11 +152,11 @@ class _HomeScreenState extends State<HomeScreen> {
       case 0:
         return "PheliFla News";
       case 1:
-        return AppLocalizations.of(context)!.newsGeTitle;
+        return AppLocalizations.of(context).newsGeTitle;
       case 2:
-        return AppLocalizations.of(context)!.colunaTitle;
+        return AppLocalizations.of(context).colunaTitle;
       case 3:
-        return AppLocalizations.of(context)!.youtubeTitle;
+        return AppLocalizations.of(context).youtubeTitle;
       default:
         return "PheliFla App";
     }
@@ -283,237 +223,6 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         );
       },
-    );
-  }
-
-  Widget _buildCustomDrawer() {
-    final User? user = FirebaseAuth.instance.currentUser;
-    return Drawer(
-      child: Column(
-        children: [
-          UserAccountsDrawerHeader(
-            decoration: BoxDecoration(color: Colors.red[800]),
-            currentAccountPicture: CircleAvatar(
-              backgroundColor: Colors.white,
-              backgroundImage:
-                  user?.photoURL != null
-                      ? NetworkImage(user!.photoURL!)
-                      : const AssetImage('assets/images/Gaming.png')
-                          as ImageProvider,
-            ),
-            accountName: Text(
-              widget.nomeUsuario,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            accountEmail: Text(user?.email ?? ""),
-          ),
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.home),
-                  title: Text(AppLocalizations.of(context)!.home),
-                  onTap: () => Navigator.pop(context),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.chat),
-                  title: Text(AppLocalizations.of(context)!.chat),
-                  onTap:
-                      () => Navigator.pushNamed(
-                        context,
-                        '/room-selection',
-                        arguments: widget.nomeUsuario,
-                      ),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.sports_soccer),
-                  title: Text(AppLocalizations.of(context)!.agendaTitle),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => AgendaRubroNegraPage()),
-                    );
-                  },
-                ),
-
-                // --- ITEM: CANTOS E HINOS ---
-                ListTile(
-                  leading: const Icon(
-                    Icons.music_note,
-                    color: Color(0xFFC52026),
-                  ),
-                  title: Text(
-                    AppLocalizations.of(context)!.menuHymns,
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const CantosListScreen(),
-                      ),
-                    );
-                  },
-                ),
-
-                // --- NOVA SEÇÃO RETRÁTIL: GAMES ---
-                ExpansionTile(
-                  leading: const Icon(Icons.sports_esports, color: Colors.amber),
-                  title: const Text(
-                    'Games',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  iconColor: Colors.red[800],
-                  collapsedIconColor: Colors.grey,
-                  childrenPadding: const EdgeInsets.only(left: 15), // Descala as sub-opções para a direita
-                  children: [
-                    ListTile(
-                      leading: const Icon(Icons.emoji_events, color: Colors.red),
-                      title: const Text('Bolão PheliFla'),
-                      onTap: () {
-                        Navigator.pop(context); // Fecha o menu lateral
-                        Navigator.pushNamed(context, '/bolao');
-                      },
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.local_fire_department, color: Colors.orange),
-                      title: const Text('Quiz Diário'),
-                      onTap: () {
-                        Navigator.pop(context); // Fecha o menu lateral
-                        Navigator.pushNamed(context, '/quiz');
-                      },
-                    ),
-                  ],
-                ),
-
-                ListTile(
-                  leading: const Icon(Icons.shopping_cart),
-                  title: Text(AppLocalizations.of(context)!.store),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const EscolhaLojaScreen(),
-                      ),
-                    );
-                  },
-                ),
-
-                // --- ITEM AJUSTADO: INGRESSOS ABAIXO DA LOJA ---
-                ListTile(
-                  leading: const Icon(
-                    Icons.confirmation_number,
-                    color: Colors.red,
-                  ),
-                  title: Text(AppLocalizations.of(context)!.ticket),
-                  subtitle: Text(
-                    AppLocalizations.of(context)!.buyTicketsForTheGames,
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _abrirSiteIngressos();
-                  },
-                ),
-
-                ListTile(
-                  leading: const Icon(Icons.star, color: Colors.amber),
-                  title: Text(AppLocalizations.of(context)!.subscribeNow),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const AssinaturaPlusScreen(),
-                      ),
-                    );
-                  },
-                ),
-                const Divider(),
-                ListTile(
-                  leading: const Icon(Icons.settings),
-                  title: Text(AppLocalizations.of(context)!.settings),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (context) => SettingsScreen(
-                              isDarkMode: isDarkMode,
-                              onThemeChanged: toggleTheme,
-                            ),
-                      ),
-                    );
-                  },
-                ),
-                const Divider(),
-                ListTile(
-                  leading: const Icon(Icons.logout),
-                  title: Text(AppLocalizations.of(context)!.logout),
-                  onTap: () => _logout(context),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// --- CARD PERSONALIZADO PHELIFLA ---
-class PheliFlaCard extends StatelessWidget {
-  final String titulo;
-  final String imagem;
-  final VoidCallback onTap;
-
-  const PheliFlaCard({
-    Key? key,
-    required this.titulo,
-    required this.imagem,
-    required this.onTap,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 15),
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (imagem.isNotEmpty)
-              CachedNetworkImage(
-                imageUrl: imagem,
-                height: 180,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                placeholder:
-                    (context, url) => Container(color: Colors.grey[200]),
-                errorWidget:
-                    (context, url, error) => const Icon(Icons.broken_image),
-              ),
-            Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Text(
-                titulo,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:pheli_fla_app/gen_l10n/app_localizations.dart';
-import 'package:pheli_fla_app/providers/user_plus_provider.dart';
 
 class AssinaturaPlusScreen extends StatelessWidget {
   const AssinaturaPlusScreen({super.key});
@@ -8,17 +7,12 @@ class AssinaturaPlusScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final localizations = AppLocalizations.of(context)!;
-    final isDark = theme.brightness == Brightness.dark;
+    final localizations = AppLocalizations.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(localizations.assinaturaPlus),
-      ),
+      appBar: AppBar(title: Text(localizations.assinaturaPlus)),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final isWide = constraints.maxWidth > 600;
-
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Center(
@@ -117,12 +111,7 @@ class AssinaturaPlusScreen extends StatelessWidget {
         children: [
           Icon(icon, color: theme.colorScheme.secondary),
           const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              title,
-              style: theme.textTheme.bodyLarge,
-            ),
-          ),
+          Expanded(child: Text(title, style: theme.textTheme.bodyLarge)),
         ],
       ),
     );

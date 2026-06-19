@@ -95,7 +95,10 @@ class _EscolhaLojaScreenState extends State<EscolhaLojaScreen>
       vsync: this,
       duration: const Duration(milliseconds: 700),
     );
-    _fadeAnimation = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
+    _fadeAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOut,
+    );
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.06),
       end: Offset.zero,
@@ -115,7 +118,7 @@ class _EscolhaLojaScreenState extends State<EscolhaLojaScreen>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final size = MediaQuery.of(context).size;
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
 
     final List<StoreModel> stores = [
       StoreModel(
@@ -180,14 +183,19 @@ class _EscolhaLojaScreenState extends State<EscolhaLojaScreen>
                                   _StoreListTile(
                                     store: stores[index],
                                     isDark: isDark,
-                                    animationDelay: Duration(milliseconds: 150 * (index + 1)),
+                                    animationDelay: Duration(
+                                      milliseconds: 150 * (index + 1),
+                                    ),
                                     parentController: _controller,
                                   ),
                                   if (index < stores.length - 1)
                                     Divider(
                                       height: 1,
                                       indent: 72,
-                                      color: isDark ? Colors.white10 : Colors.black38,
+                                      color:
+                                          isDark
+                                              ? Colors.white10
+                                              : Colors.black38,
                                     ),
                                 ],
                               );
@@ -210,7 +218,10 @@ class _EscolhaLojaScreenState extends State<EscolhaLojaScreen>
   }
 
   PreferredSizeWidget _buildAppBar(
-      BuildContext context, bool isDark, AppLocalizations l10n) {
+    BuildContext context,
+    bool isDark,
+    AppLocalizations l10n,
+  ) {
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -292,7 +303,10 @@ class _EscolhaLojaScreenState extends State<EscolhaLojaScreen>
                   width: 4,
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [FlaTheme.vermelhoVibrante, FlaTheme.vermelhoEscuro],
+                      colors: [
+                        FlaTheme.vermelhoVibrante,
+                        FlaTheme.vermelhoEscuro,
+                      ],
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                     ),
@@ -310,7 +324,10 @@ class _EscolhaLojaScreenState extends State<EscolhaLojaScreen>
                   children: [
                     // Badge vermelho
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: FlaTheme.vermelho,
                         borderRadius: BorderRadius.circular(6),
@@ -399,9 +416,12 @@ class _StoreListTileState extends State<_StoreListTile> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 120),
         decoration: BoxDecoration(
-          color: _isPressed
-              ? (widget.isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03))
-              : Colors.transparent,
+          color:
+              _isPressed
+                  ? (widget.isDark
+                      ? Colors.white.withOpacity(0.05)
+                      : Colors.black.withOpacity(0.03))
+                  : Colors.transparent,
           borderRadius: BorderRadius.circular(4),
         ),
         child: Padding(
@@ -430,7 +450,10 @@ class _StoreListTileState extends State<_StoreListTile> {
                       widget.store.subtitle,
                       style: TextStyle(
                         fontSize: 12,
-                        color: widget.isDark ? Colors.white54 : Colors.grey.shade600,
+                        color:
+                            widget.isDark
+                                ? Colors.white54
+                                : Colors.grey.shade600,
                         height: 1.3,
                       ),
                     ),
@@ -443,7 +466,9 @@ class _StoreListTileState extends State<_StoreListTile> {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: widget.store.themeColor.withOpacity(widget.isDark ? 0.15 : 0.08),
+                  color: widget.store.themeColor.withOpacity(
+                    widget.isDark ? 0.15 : 0.08,
+                  ),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
@@ -490,15 +515,19 @@ class _StoreIcon extends StatelessWidget {
           width: 1.2,
         ),
       ),
-      child: store.isSvg
-          ? SvgPicture.asset(
-              store.imagePath,
-              colorFilter: ColorFilter.mode(store.themeColor, BlendMode.srcIn),
-            )
-          : ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: Image.asset(store.imagePath, fit: BoxFit.contain),
-            ),
+      child:
+          store.isSvg
+              ? SvgPicture.asset(
+                store.imagePath,
+                colorFilter: ColorFilter.mode(
+                  store.themeColor,
+                  BlendMode.srcIn,
+                ),
+              )
+              : ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: Image.asset(store.imagePath, fit: BoxFit.contain),
+              ),
     );
   }
 }
@@ -510,7 +539,8 @@ class _ExpandableAboutSection extends StatefulWidget {
   const _ExpandableAboutSection();
 
   @override
-  State<_ExpandableAboutSection> createState() => _ExpandableAboutSectionState();
+  State<_ExpandableAboutSection> createState() =>
+      _ExpandableAboutSectionState();
 }
 
 class _ExpandableAboutSectionState extends State<_ExpandableAboutSection>
@@ -546,9 +576,10 @@ class _ExpandableAboutSectionState extends State<_ExpandableAboutSection>
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark
-            ? FlaTheme.vermelho.withOpacity(0.07)
-            : FlaTheme.vermelho.withOpacity(0.04),
+        color:
+            isDark
+                ? FlaTheme.vermelho.withOpacity(0.07)
+                : FlaTheme.vermelho.withOpacity(0.04),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: FlaTheme.vermelho.withOpacity(isDark ? 0.35 : 0.25),
@@ -594,8 +625,10 @@ class _ExpandableAboutSectionState extends State<_ExpandableAboutSection>
                     ),
                     const Spacer(),
                     RotationTransition(
-                      turns: Tween<double>(begin: 0, end: 0.5)
-                          .animate(_iconController),
+                      turns: Tween<double>(
+                        begin: 0,
+                        end: 0.5,
+                      ).animate(_iconController),
                       child: const Icon(
                         Icons.keyboard_arrow_down_rounded,
                         color: FlaTheme.vermelho,
@@ -609,66 +642,74 @@ class _ExpandableAboutSectionState extends State<_ExpandableAboutSection>
                 AnimatedSize(
                   duration: const Duration(milliseconds: 280),
                   curve: Curves.easeInOut,
-                  child: _isExpanded
-                      ? Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 14),
-                            Divider(
-                              color: FlaTheme.vermelho.withOpacity(0.25),
-                              height: 1,
-                            ),
-                            const SizedBox(height: 14),
-                            Text.rich(
-                              TextSpan(
-                                style: TextStyle(
-                                  color: textColor,
-                                  fontSize: 13.5,
-                                  height: 1.65,
-                                ),
-                                children: [
-                                  const TextSpan(
-                                    text:
-                                        'Encontre tudo o que você procura no nosso catálogo selecionado! Acesse a ',
-                                  ),
-                                  TextSpan(
-                                    text: 'Loja da Nação',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      color: isDark
-                                          ? FlaTheme.vermelhoVibrante
-                                          : FlaTheme.vermelho,
-                                    ),
-                                  ),
-                                  const TextSpan(
-                                    text:
-                                        ' para conferir mantos sagrados, vestuários e acessórios oficiais do Mengão. Se procura utilidades, presentes e variedades do dia a dia, explore a ',
-                                  ),
-                                  TextSpan(
-                                    text: 'Loja de Produtos Variados',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      color: isDark ? Colors.white : Colors.black87,
-                                    ),
-                                  ),
-                                  const TextSpan(
-                                      text: ' e descubra oportunidades imperdíveis. '),
-                                  TextSpan(
-                                    text: 'Urubuzada unida! 🦅',
-                                    style: TextStyle(
-                                      fontStyle: FontStyle.italic,
-                                      color: isDark
-                                          ? FlaTheme.ouroSuave
-                                          : FlaTheme.ouro,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
+                  child:
+                      _isExpanded
+                          ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 14),
+                              Divider(
+                                color: FlaTheme.vermelho.withOpacity(0.25),
+                                height: 1,
                               ),
-                            ),
-                          ],
-                        )
-                      : const SizedBox.shrink(),
+                              const SizedBox(height: 14),
+                              Text.rich(
+                                TextSpan(
+                                  style: TextStyle(
+                                    color: textColor,
+                                    fontSize: 13.5,
+                                    height: 1.65,
+                                  ),
+                                  children: [
+                                    const TextSpan(
+                                      text:
+                                          'Encontre tudo o que você procura no nosso catálogo selecionado! Acesse a ',
+                                    ),
+                                    TextSpan(
+                                      text: 'Loja da Nação',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        color:
+                                            isDark
+                                                ? FlaTheme.vermelhoVibrante
+                                                : FlaTheme.vermelho,
+                                      ),
+                                    ),
+                                    const TextSpan(
+                                      text:
+                                          ' para conferir mantos sagrados, vestuários e acessórios oficiais do Mengão. Se procura utilidades, presentes e variedades do dia a dia, explore a ',
+                                    ),
+                                    TextSpan(
+                                      text: 'Loja de Produtos Variados',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        color:
+                                            isDark
+                                                ? Colors.white
+                                                : Colors.black87,
+                                      ),
+                                    ),
+                                    const TextSpan(
+                                      text:
+                                          ' e descubra oportunidades imperdíveis. ',
+                                    ),
+                                    TextSpan(
+                                      text: 'Urubuzada unida! 🦅',
+                                      style: TextStyle(
+                                        fontStyle: FontStyle.italic,
+                                        color:
+                                            isDark
+                                                ? FlaTheme.ouroSuave
+                                                : FlaTheme.ouro,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          )
+                          : const SizedBox.shrink(),
                 ),
               ],
             ),
@@ -696,14 +737,16 @@ class _FlaGlassCard extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
           decoration: BoxDecoration(
-            color: isDark
-                ? Colors.white.withOpacity(0.045)
-                : Colors.white.withOpacity(0.75),
+            color:
+                isDark
+                    ? Colors.white.withOpacity(0.045)
+                    : Colors.white.withOpacity(0.75),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isDark
-                  ? Colors.white.withOpacity(0.08)
-                  : Colors.white.withOpacity(0.6),
+              color:
+                  isDark
+                      ? Colors.white.withOpacity(0.08)
+                      : Colors.white.withOpacity(0.6),
               width: 1,
             ),
             boxShadow: [
@@ -806,7 +849,11 @@ class _FlaBackButton extends StatelessWidget {
           },
           child: const Padding(
             padding: EdgeInsets.all(8),
-            child: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+            child: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: Colors.white,
+              size: 18,
+            ),
           ),
         ),
       ),

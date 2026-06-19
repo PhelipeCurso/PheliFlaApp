@@ -14,7 +14,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:pheli_fla_app/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:pheli_fla_app/locale_provider.dart';
-import 'pages/noticias_page_coluna.dart';
 import 'screens/escolha_loja_screen.dart';
 import 'providers/user_plus_provider.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -22,7 +21,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/minigames/bolao_screen.dart';
 import 'screens/minigames/quiz_screen.dart';
 import 'screens/minigames/ranking_screen.dart';
-
 
 // Biometria
 import 'package:local_auth/local_auth.dart';
@@ -176,8 +174,7 @@ class _MyAppState extends State<MyApp> {
       '/quiz': (context) => const QuizScreen(),
       '/ranking_screen': (context) => const RankingScreen(),
       '/loja': (context) {
-        final loja =
-            ModalRoute.of(context)!.settings.arguments as String;
+        final loja = ModalRoute.of(context)!.settings.arguments as String;
         return LojaScreen(Loja: loja);
       },
       '/home_screen': (context) {
@@ -206,8 +203,7 @@ class _MyAppState extends State<MyApp> {
       brightness: brightness,
       primaryColor: Colors.red[900],
       cardColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-      scaffoldBackgroundColor:
-          isDark ? Colors.black : const Color(0xFFF5F5F5),
+      scaffoldBackgroundColor: isDark ? Colors.black : const Color(0xFFF5F5F5),
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.red[900],
         foregroundColor: Colors.white,
@@ -274,8 +270,7 @@ class _LoadingScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Center(
-          child: CircularProgressIndicator(color: Colors.red[900])),
+      body: Center(child: CircularProgressIndicator(color: Colors.red[900])),
     );
   }
 }
@@ -300,9 +295,10 @@ class _DirectHomeRedirectState extends State<_DirectHomeRedirect> {
         context,
         '/home_screen',
         // Prioriza displayName (Google); usa 'Nação' como fallback
-        arguments: widget.user.displayName?.isNotEmpty == true
-            ? widget.user.displayName
-            : 'Nação',
+        arguments:
+            widget.user.displayName?.isNotEmpty == true
+                ? widget.user.displayName
+                : 'Nação',
       );
     });
   }
@@ -358,9 +354,10 @@ class _BiometricLockState extends State<BiometricLock> {
       if (!mounted) return;
 
       if (autenticado) {
-        final nome = widget.user.displayName?.isNotEmpty == true
-            ? widget.user.displayName!
-            : 'Nação';
+        final nome =
+            widget.user.displayName?.isNotEmpty == true
+                ? widget.user.displayName!
+                : 'Nação';
         Navigator.pushReplacementNamed(
           context,
           '/home_screen',
@@ -403,10 +400,7 @@ class _BiometricLockState extends State<BiometricLock> {
               Text(
                 _mensagem,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Raleway',
-                ),
+                style: const TextStyle(fontSize: 16, fontFamily: 'Raleway'),
               ),
               const SizedBox(height: 30),
               if (!_isAuthenticating) ...[
@@ -415,13 +409,16 @@ class _BiometricLockState extends State<BiometricLock> {
                     backgroundColor: Colors.red[900],
                     minimumSize: const Size(double.infinity, 50),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   onPressed: _autenticar,
                   child: const Text(
                     'Tentar Novamente',
                     style: TextStyle(
-                        color: Colors.white, fontFamily: 'Raleway'),
+                      color: Colors.white,
+                      fontFamily: 'Raleway',
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -429,8 +426,7 @@ class _BiometricLockState extends State<BiometricLock> {
                   onPressed: _sairDaConta,
                   child: const Text(
                     'Sair da conta',
-                    style:
-                        TextStyle(color: Colors.grey, fontFamily: 'Raleway'),
+                    style: TextStyle(color: Colors.grey, fontFamily: 'Raleway'),
                   ),
                 ),
               ],

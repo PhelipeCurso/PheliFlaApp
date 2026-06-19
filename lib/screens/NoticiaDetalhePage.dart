@@ -41,7 +41,7 @@ class NoticiaDetalhePage extends StatefulWidget {
 class _NoticiaDetalhePageState extends State<NoticiaDetalhePage> {
   bool _foiCurtido = false;
   int _quantidadeCurtidas = 0; // Estado local para renderização rápida
-  
+
   final TextEditingController _commentController = TextEditingController();
   final User? _usuarioLogado = FirebaseAuth.instance.currentUser;
   late String _noticiaId;
@@ -49,12 +49,14 @@ class _NoticiaDetalhePageState extends State<NoticiaDetalhePage> {
   @override
   void initState() {
     super.initState();
-    
+
     // Gerando o ID seguro baseado na origem da notícia
     String idOriginal = widget.noticia['link'] ?? widget.noticia['id'] ?? '';
     String titulo = widget.noticia['titulo'] ?? '';
 
-    if (idOriginal.contains('http://') || idOriginal.contains('https://') || idOriginal.isEmpty) {
+    if (idOriginal.contains('http://') ||
+        idOriginal.contains('https://') ||
+        idOriginal.isEmpty) {
       if (titulo.isNotEmpty) {
         var bytes = utf8.encode(titulo);
         _noticiaId = sha256.convert(bytes).toString();
@@ -80,14 +82,17 @@ class _NoticiaDetalhePageState extends State<NoticiaDetalhePage> {
     if (_noticiaId.isEmpty || _usuarioLogado == null) return;
 
     try {
-      final curtidasSnapshot = await FirebaseFirestore.instance
-          .collection('noticias')
-          .doc(_noticiaId)
-          .collection('curtidas')
-          .get();
+      final curtidasSnapshot =
+          await FirebaseFirestore.instance
+              .collection('noticias')
+              .doc(_noticiaId)
+              .collection('curtidas')
+              .get();
 
       // Verifica se o UID do usuário atual está na lista de quem curtiu
-      final usuarioCurtiu = curtidasSnapshot.docs.any((doc) => doc.id == _usuarioLogado!.uid);
+      final usuarioCurtiu = curtidasSnapshot.docs.any(
+        (doc) => doc.id == _usuarioLogado.uid,
+      );
 
       setState(() {
         _quantidadeCurtidas = curtidasSnapshot.docs.length;
@@ -106,7 +111,7 @@ class _NoticiaDetalhePageState extends State<NoticiaDetalhePage> {
         .collection('noticias')
         .doc(_noticiaId)
         .collection('curtidas')
-        .doc(_usuarioLogado!.uid); // O ID do documento é o UID do usuário
+        .doc(_usuarioLogado.uid); // O ID do documento é o UID do usuário
 
     // Atualiza a UI imediatamente para dar sensação de fluidez (Optimistic Update)
     setState(() {
@@ -124,7 +129,7 @@ class _NoticiaDetalhePageState extends State<NoticiaDetalhePage> {
         // Se agora está marcado como curtido, salva o documento no banco
         await docCurtidaRef.set({
           'dataCurtida': FieldValue.serverTimestamp(),
-          'usuarioNome': _usuarioLogado!.displayName ?? "Usuário PheliFla",
+          'usuarioNome': _usuarioLogado.displayName ?? "Usuário PheliFla",
         });
       } else {
         // Se descurtiu, remove o documento do banco
@@ -158,11 +163,11 @@ class _NoticiaDetalhePageState extends State<NoticiaDetalhePage> {
           .doc(_noticiaId)
           .collection('comentarios')
           .add({
-        'nomeUsuario': nome,
-        'fotoUsuario': foto,
-        'texto': textoComentario,
-        'dataCriacao': FieldValue.serverTimestamp(),
-      });
+            'nomeUsuario': nome,
+            'fotoUsuario': foto,
+            'texto': textoComentario,
+            'dataCriacao': FieldValue.serverTimestamp(),
+          });
 
       _commentController.clear();
       FocusScope.of(context).unfocus();
@@ -179,24 +184,24 @@ class _NoticiaDetalhePageState extends State<NoticiaDetalhePage> {
         appBarTheme: const AppBarTheme(backgroundColor: Color(0xFFC62828)),
       ),
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(widget.noticia['titulo'] ?? "Notícia"),
-        ),
+        appBar: AppBar(title: Text(widget.noticia['titulo'] ?? "Notícia")),
         body: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Imagem de Destaque
-              if (widget.noticia['imagem'] != null && widget.noticia['imagem']!.isNotEmpty)
+              if (widget.noticia['imagem'] != null &&
+                  widget.noticia['imagem']!.isNotEmpty)
                 CachedNetworkImage(
                   imageUrl: widget.noticia['imagem']!,
                   width: double.infinity,
                   height: 250,
                   fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(color: Colors.grey[900]),
+                  placeholder:
+                      (context, url) => Container(color: Colors.grey[900]),
                   errorWidget: (context, url, error) => const Icon(Icons.error),
                 ),
-              
+
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
@@ -205,18 +210,30 @@ class _NoticiaDetalhePageState extends State<NoticiaDetalhePage> {
                     // Título
                     Text(
                       widget.noticia['titulo'] ?? "",
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                     const SizedBox(height: 8),
 
                     // Fonte
                     Row(
                       children: [
-                        Icon(Icons.edit_note, size: 20, color: Colors.grey[600]),
+                        Icon(
+                          Icons.edit_note,
+                          size: 20,
+                          color: Colors.grey[600],
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           "Fonte: ${widget.noticia['autor'] ?? 'Redação PheliFla'}",
-                          style: TextStyle(fontSize: 14, color: Colors.grey[600], fontStyle: FontStyle.italic),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                            fontStyle: FontStyle.italic,
+                          ),
                         ),
                       ],
                     ),
@@ -227,44 +244,57 @@ class _NoticiaDetalhePageState extends State<NoticiaDetalhePage> {
                     // Conteúdo
                     Text(
                       widget.noticia['conteudo'] ?? "Sem conteúdo disponível.",
-                      style: const TextStyle(fontSize: 16, height: 1.5, color: Colors.white),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        height: 1.5,
+                        color: Colors.white,
+                      ),
                     ),
-                    
+
                     const SizedBox(height: 20),
                     const Divider(color: Colors.grey),
-                    
+
                     // --- SEÇÃO DE INTERAÇÃO (CURTIDA ATUALIZADA) ---
                     Row(
                       children: [
                         IconButton(
                           icon: Icon(
-                            _foiCurtido ? Icons.favorite : Icons.favorite_border,
+                            _foiCurtido
+                                ? Icons.favorite
+                                : Icons.favorite_border,
                             color: _foiCurtido ? Colors.red : Colors.grey,
                           ),
                           onPressed: _alternarCurtida,
                         ),
                         Text(
-                          _quantidadeCurtidas == 0 
-                              ? "Seja o primeiro a curtir" 
+                          _quantidadeCurtidas == 0
+                              ? "Seja o primeiro a curtir"
                               : "$_quantidadeCurtidas ${_quantidadeCurtidas == 1 ? 'curtida' : 'curtidas'}",
                           style: TextStyle(
                             color: _foiCurtido ? Colors.red : Colors.grey,
-                            fontWeight: _foiCurtido ? FontWeight.bold : FontWeight.normal,
+                            fontWeight:
+                                _foiCurtido
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
                           ),
                         ),
                       ],
                     ),
-                    
+
                     const Divider(color: Colors.grey),
                     const SizedBox(height: 10),
-  
+
                     // --- SEÇÃO DE COMENTÁRIOS ---
                     const Text(
                       "Comentários",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                     const SizedBox(height: 10),
-  
+
                     Row(
                       children: [
                         Expanded(
@@ -274,10 +304,15 @@ class _NoticiaDetalhePageState extends State<NoticiaDetalhePage> {
                             decoration: InputDecoration(
                               hintText: "Deixe um breve comentário...",
                               hintStyle: const TextStyle(color: Colors.grey),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(color: Colors.grey),
+                                borderSide: const BorderSide(
+                                  color: Colors.grey,
+                                ),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
@@ -294,27 +329,40 @@ class _NoticiaDetalhePageState extends State<NoticiaDetalhePage> {
                       ],
                     ),
                     const SizedBox(height: 15),
-  
+
                     // --- LISTA DE COMENTÁRIOS VIA STREAMBUILDER ---
                     if (_noticiaId.isEmpty)
-                      const Text("Comentários indisponíveis.", style: TextStyle(color: Colors.grey))
+                      const Text(
+                        "Comentários indisponíveis.",
+                        style: TextStyle(color: Colors.grey),
+                      )
                     else
                       StreamBuilder<QuerySnapshot>(
-                        stream: FirebaseFirestore.instance
-                            .collection('noticias')
-                            .doc(_noticiaId)
-                            .collection('comentarios')
-                            .orderBy('dataCriacao', descending: true)
-                            .snapshots(),
+                        stream:
+                            FirebaseFirestore.instance
+                                .collection('noticias')
+                                .doc(_noticiaId)
+                                .collection('comentarios')
+                                .orderBy('dataCriacao', descending: true)
+                                .snapshots(),
                         builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) {
-                            return const Center(child: CircularProgressIndicator(color: Colors.red));
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.red,
+                              ),
+                            );
                           }
-                          
-                          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+
+                          if (!snapshot.hasData ||
+                              snapshot.data!.docs.isEmpty) {
                             return const Text(
                               "Nenhum comentário ainda. Seja o primeiro!",
-                              style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontStyle: FontStyle.italic,
+                              ),
                             );
                           }
 
@@ -325,8 +373,11 @@ class _NoticiaDetalhePageState extends State<NoticiaDetalhePage> {
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: docs.length,
                             itemBuilder: (context, index) {
-                              final data = docs[index].data() as Map<String, dynamic>;
-                              final coment = ComentarioModel.fromFirestore(data);
+                              final data =
+                                  docs[index].data() as Map<String, dynamic>;
+                              final coment = ComentarioModel.fromFirestore(
+                                data,
+                              );
 
                               return Card(
                                 color: const Color(0xFF1E1E24),
@@ -334,9 +385,13 @@ class _NoticiaDetalhePageState extends State<NoticiaDetalhePage> {
                                 child: ListTile(
                                   leading: CircleAvatar(
                                     backgroundColor: Colors.grey[700],
-                                    backgroundImage: coment.fotoUsuario.isNotEmpty
-                                        ? NetworkImage(coment.fotoUsuario)
-                                        : const AssetImage('assets/images/Gaming.png') as ImageProvider,
+                                    backgroundImage:
+                                        coment.fotoUsuario.isNotEmpty
+                                            ? NetworkImage(coment.fotoUsuario)
+                                            : const AssetImage(
+                                                  'assets/images/Gaming.png',
+                                                )
+                                                as ImageProvider,
                                   ),
                                   title: Text(
                                     coment.nomeUsuario,
@@ -350,7 +405,10 @@ class _NoticiaDetalhePageState extends State<NoticiaDetalhePage> {
                                     padding: const EdgeInsets.only(top: 4.0),
                                     child: Text(
                                       coment.texto,
-                                      style: const TextStyle(color: Colors.white, fontSize: 15),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 15,
+                                      ),
                                     ),
                                   ),
                                 ),
